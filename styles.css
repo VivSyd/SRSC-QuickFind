@@ -664,20 +664,6 @@ input {
   gap: 8px;
 }
 
-.sides-quick-ops {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.sides-quick-ops .ghost-button {
-  min-height: 40px;
-  min-width: 0;
-  padding: 0;
-  font-weight: 800;
-}
-
 .calculator-pad__btn {
   min-height: 46px;
   border: 1px solid var(--line-strong);

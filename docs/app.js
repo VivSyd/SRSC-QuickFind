@@ -176,7 +176,6 @@ const elements = {
   calculatorBackButton: document.querySelector("#calculatorBackButton"),
   addItemBackButton: document.querySelector("#addItemBackButton"),
   sidesInput: document.querySelector("#sidesInput"),
-  sidesQuickOps: document.querySelector("#sidesQuickOps"),
   sidesPad: document.querySelector("#sidesPad"),
   standardFoldsInput: document.querySelector("#standardFoldsInput"),
   crushReturnInput: document.querySelector("#crushReturnInput"),
@@ -229,7 +228,9 @@ const calculatorState = {
   family: "colorbond055",
   colour: "MON",
   qty: 1,
+  qtyRaw: "1",
   length: 1,
+  lengthRaw: "1",
   orders: [],
   currentOrderItems: [],
   salesOrderNo: "",
@@ -264,88 +265,100 @@ const calculatorState = {
   detailImageDataUrl: "",
 };
 
-function loadPersistedState() {
+function parseDecimalInput(rawValue, fallback = 0) {
+  const normalized = String(rawValue ?? "").trim().replace(",", ".");
+  if (!normalized) {
+    return fallback;
+  }
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function sanitizeDecimalRawInput(rawValue) {
+  const value = String(rawValue ?? "");
+  let normalized = value.replace(",", ".").replace(/[^0-9.]/g, "");
+  const firstDotIndex = normalized.indexOf(".");
+  if (firstDotIndex !== -1) {
+    normalized = `${normalized.slice(0, firstDotIndex + 1)}${normalized.slice(firstDotIndex + 1).replace(/\./g, "")}`;
+  }
+  if (normalized === ".") {
+    return "0.";
+  }
+  return normalized;
+}
+
+function parseSavedJson(storageKey, fallbackValue) {
+  const rawValue = window.localStorage.getItem(storageKey);
+  if (!rawValue) {
+    return fallbackValue;
+  }
+
   try {
-    const savedCustomItems = window.localStorage.getItem(STORAGE_KEYS.customItems);
-    const savedOrders = window.localStorage.getItem(STORAGE_KEYS.orders);
-    const savedOrderCounter = window.localStorage.getItem(STORAGE_KEYS.orderCounter);
-    const savedCurrentOrderItems = window.localStorage.getItem(STORAGE_KEYS.currentOrderItems);
-    const savedSalesOrderNo = window.localStorage.getItem(STORAGE_KEYS.salesOrderNo);
-    const savedWarehouse = window.localStorage.getItem(STORAGE_KEYS.warehouse);
-    const savedItemOverrides = window.localStorage.getItem(STORAGE_KEYS.itemOverrides);
-    const savedDeletedItems = window.localStorage.getItem(STORAGE_KEYS.deletedItems);
-    const savedSuppliers = window.localStorage.getItem(STORAGE_KEYS.suppliers);
-    const savedPreferredFlags = window.localStorage.getItem(STORAGE_KEYS.preferredFlags);
-
-    if (savedCustomItems) {
-      const parsedCustomItems = JSON.parse(savedCustomItems);
-      if (Array.isArray(parsedCustomItems) && parsedCustomItems.length > 0) {
-        calculatorState.customItems = parsedCustomItems.map((item, index) => ({
-          uid: item.uid || `custom-${index}-${Date.now()}`,
-          ...item,
-        }));
-      }
-    }
-
-    if (savedOrders) {
-      const parsedOrders = JSON.parse(savedOrders);
-      if (Array.isArray(parsedOrders)) {
-        calculatorState.orders = parsedOrders;
-      }
-    }
-
-    if (savedOrderCounter) {
-      const parsedCounter = Number(savedOrderCounter);
-      if (Number.isFinite(parsedCounter) && parsedCounter > 0) {
-        calculatorState.orderCounter = parsedCounter;
-      }
-    }
-
-    if (savedCurrentOrderItems) {
-      const parsedCurrentOrderItems = JSON.parse(savedCurrentOrderItems);
-      if (Array.isArray(parsedCurrentOrderItems)) {
-        calculatorState.currentOrderItems = parsedCurrentOrderItems;
-      }
-    }
-
-    if (typeof savedSalesOrderNo === "string") {
-      calculatorState.salesOrderNo = savedSalesOrderNo;
-    }
-
-    if (typeof savedWarehouse === "string") {
-      calculatorState.warehouse = savedWarehouse;
-    }
-
-    if (savedItemOverrides) {
-      const parsedOverrides = JSON.parse(savedItemOverrides);
-      if (parsedOverrides && typeof parsedOverrides === "object") {
-        calculatorState.itemOverrides = parsedOverrides;
-      }
-    }
-
-    if (savedDeletedItems) {
-      const parsedDeletedItems = JSON.parse(savedDeletedItems);
-      if (Array.isArray(parsedDeletedItems)) {
-        calculatorState.deletedItems = parsedDeletedItems;
-      }
-    }
-
-    if (savedSuppliers) {
-      const parsedSuppliers = JSON.parse(savedSuppliers);
-      if (Array.isArray(parsedSuppliers) && parsedSuppliers.length > 0) {
-        calculatorState.suppliers = [...new Set(parsedSuppliers.map((entry) => normalizeSupplierName(entry)).filter(Boolean))];
-        persistSuppliers();
-      }
-    }
-
-    if (savedPreferredFlags) {
-      const parsedPreferredFlags = JSON.parse(savedPreferredFlags);
-      if (parsedPreferredFlags && typeof parsedPreferredFlags === "object") {
-        calculatorState.preferredFlags = parsedPreferredFlags;
-      }
-    }
+    return JSON.parse(rawValue);
   } catch (error) {
-    console.warn("Unable to load saved SRSC App data.", error);
+    console.warn(`Unable to parse saved key: ${storageKey}`, error);
+    return fallbackValue;
+  }
+}
+
+function loadPersistedState() {
+  const parsedCustomItems = parseSavedJson(STORAGE_KEYS.customItems, null);
+  const parsedOrders = parseSavedJson(STORAGE_KEYS.orders, null);
+  const parsedCurrentOrderItems = parseSavedJson(STORAGE_KEYS.currentOrderItems, null);
+  const parsedOverrides = parseSavedJson(STORAGE_KEYS.itemOverrides, null);
+  const parsedDeletedItems = parseSavedJson(STORAGE_KEYS.deletedItems, null);
+  const parsedSuppliers = parseSavedJson(STORAGE_KEYS.suppliers, null);
+  const parsedPreferredFlags = parseSavedJson(STORAGE_KEYS.preferredFlags, null);
+
+  const savedOrderCounter = window.localStorage.getItem(STORAGE_KEYS.orderCounter);
+  const savedSalesOrderNo = window.localStorage.getItem(STORAGE_KEYS.salesOrderNo);
+  const savedWarehouse = window.localStorage.getItem(STORAGE_KEYS.warehouse);
+
+  if (Array.isArray(parsedCustomItems) && parsedCustomItems.length > 0) {
+    calculatorState.customItems = parsedCustomItems.map((item, index) => ({
+      uid: item.uid || `custom-${index}-${Date.now()}`,
+      ...item,
+    }));
+  }
+
+  if (Array.isArray(parsedOrders)) {
+    calculatorState.orders = parsedOrders;
+  }
+
+  if (savedOrderCounter) {
+    const parsedCounter = Number(savedOrderCounter);
+    if (Number.isFinite(parsedCounter) && parsedCounter > 0) {
+      calculatorState.orderCounter = parsedCounter;
+    }
+  }
+
+  if (Array.isArray(parsedCurrentOrderItems)) {
+    calculatorState.currentOrderItems = parsedCurrentOrderItems;
+  }
+
+  if (typeof savedSalesOrderNo === "string") {
+    calculatorState.salesOrderNo = savedSalesOrderNo;
+  }
+
+  if (typeof savedWarehouse === "string") {
+    calculatorState.warehouse = savedWarehouse;
+  }
+
+  if (parsedOverrides && typeof parsedOverrides === "object") {
+    calculatorState.itemOverrides = parsedOverrides;
+  }
+
+  if (Array.isArray(parsedDeletedItems)) {
+    calculatorState.deletedItems = parsedDeletedItems;
+  }
+
+  if (Array.isArray(parsedSuppliers) && parsedSuppliers.length > 0) {
+    calculatorState.suppliers = [...new Set(parsedSuppliers.map((entry) => normalizeSupplierName(entry)).filter(Boolean))];
+    persistSuppliers();
+  }
+
+  if (parsedPreferredFlags && typeof parsedPreferredFlags === "object") {
+    calculatorState.preferredFlags = parsedPreferredFlags;
   }
 }
 
@@ -1037,18 +1050,19 @@ function updateItemPreferred(itemId, isPreferred) {
     return;
   }
 
-  setPreferredFlag(itemId, isPreferred);
+  const preferredValue = Boolean(isPreferred);
+  setPreferredFlag(itemId, preferredValue);
 
   if (itemId.startsWith("custom:")) {
     const uid = itemId.replace("custom:", "");
     calculatorState.customItems = calculatorState.customItems.map((item) =>
-      item.uid === uid ? { ...item, preferred: Boolean(isPreferred) } : item
+      item.uid === uid ? { ...item, preferred: preferredValue } : item
     );
     persistCustomItems();
-  } else if (itemId.startsWith("base:")) {
+  } else {
     calculatorState.itemOverrides[itemId] = {
       ...calculatorState.itemOverrides[itemId],
-      preferred: Boolean(isPreferred),
+      preferred: preferredValue,
     };
     persistItemChanges();
   }
@@ -1566,11 +1580,13 @@ function renderCalculator() {
   elements.colourSelect.value = calculatorState.colour;
   elements.colourField.hidden = !familyConfig[calculatorState.family].usesColour;
   elements.colourSwatchesField.hidden = !familyConfig[calculatorState.family].usesColour;
-  elements.qtyInput.value = calculatorState.qty;
-  elements.lengthInput.value = calculatorState.length;
+  elements.qtyInput.value = calculatorState.qtyRaw;
+  elements.lengthInput.value = calculatorState.lengthRaw;
   elements.taperingCheckbox.checked = calculatorState.isTapering;
   elements.salesOrderInput.value = calculatorState.salesOrderNo;
-  elements.warehouseInput.value = calculatorState.warehouse;
+  if (elements.warehouseInput) {
+    elements.warehouseInput.value = calculatorState.warehouse;
+  }
   elements.addToOrderButton.textContent = calculatorState.editingCurrentOrderIndex !== null ? "Save Flashing" : "Add to Order";
   elements.girthLine.textContent = girthLine;
   elements.actualGirthLine.textContent = actualGirthLine;
@@ -1664,28 +1680,12 @@ function renderOrdersToday() {
 
   elements.ordersTodayList.innerHTML = calculatorState.orders
     .map(
-      (order) => `
+      (order, index) => `
         <div class="order-day-card">
-          <div class="order-day-card__header">
-            <div>
-              <strong>Order #${order.orderId} | SO: ${escapeHtml(order.salesOrderNo || "N/A")}</strong>
-              <div class="order-day-card__meta">Warehouse: ${escapeHtml(order.warehouse || "N/A")}</div>
-              <div class="order-day-card__meta">${escapeHtml(order.timestamp)}</div>
-            </div>
-            <button class="ghost-button" type="button" data-copy-order="${order.orderId}">Copy Order</button>
+          <div>
+            <strong>${index + 1}. SO: ${escapeHtml(order.salesOrderNo || "N/A")}</strong>
+            <div class="order-day-card__meta">${escapeHtml(order.timestamp || "")}</div>
           </div>
-          ${order.items
-            .map(
-              (item) => `
-                <div class="order-item" style="margin-top:10px;">
-                  <div>${escapeHtml(item.girthLine)}</div>
-                  <div>${escapeHtml(item.actualGirthLine || (item.actualGirth ? `Actual Girth (before rounding): ${item.actualGirth} mm` : ""))}</div>
-                  <div>${escapeHtml(item.summaryLine)}</div>
-                  <div class="order-day-card__output">${escapeHtml(item.finalOutput)}</div>
-                </div>
-              `
-            )
-            .join("")}
         </div>
       `
     )
@@ -1735,7 +1735,9 @@ function resetFlashingForm() {
   calculatorState.family = "colorbond055";
   calculatorState.colour = "MON";
   calculatorState.qty = 1;
+  calculatorState.qtyRaw = "1";
   calculatorState.length = 1;
+  calculatorState.lengthRaw = "1";
   calculatorState.editingCurrentOrderIndex = null;
 }
 
@@ -1755,7 +1757,9 @@ function loadFlashingIntoForm(orderItem, index) {
   calculatorState.family = orderItem.calculatorInput.family || "colorbond055";
   calculatorState.colour = orderItem.calculatorInput.colour || "MON";
   calculatorState.qty = Number(orderItem.calculatorInput.qty || 1);
+  calculatorState.qtyRaw = String(orderItem.calculatorInput.qty || 1);
   calculatorState.length = Number(orderItem.calculatorInput.length || 1);
+  calculatorState.lengthRaw = String(orderItem.calculatorInput.length || 1);
   calculatorState.editingCurrentOrderIndex = index;
   elements.copyAllFeedback.textContent = "Editing current order item.";
   renderCalculator();
@@ -1903,28 +1907,29 @@ function finalizeOrder() {
     elements.copyAllFeedback.textContent = "Enter Sales Order No before finalising.";
     return;
   }
-  if (!calculatorState.warehouse.trim()) {
-    elements.copyAllFeedback.textContent = "Enter warehouse before finalising.";
-    return;
-  }
 
-  const newOrder = {
+  const printableOrder = {
     orderId: calculatorState.orderCounter,
     salesOrderNo: calculatorState.salesOrderNo,
-    warehouse: calculatorState.warehouse,
     items: calculatorState.currentOrderItems,
     timestamp: new Date().toLocaleString(),
   };
 
-  calculatorState.orders = [...calculatorState.orders, newOrder];
+  const orderSummary = {
+    orderId: calculatorState.orderCounter,
+    salesOrderNo: calculatorState.salesOrderNo,
+    timestamp: printableOrder.timestamp,
+  };
+
+  calculatorState.orders = [...calculatorState.orders, orderSummary];
   calculatorState.currentOrderItems = [];
   calculatorState.salesOrderNo = "";
   calculatorState.warehouse = "";
   calculatorState.orderCounter += 1;
   persistOrders();
   persistCurrentOrder();
-  downloadOrderJson(newOrder);
-  elements.copyAllFeedback.textContent = `Order #${newOrder.orderId} finalised.`;
+  downloadOrderJson(printableOrder);
+  elements.copyAllFeedback.textContent = `Sales order ${orderSummary.salesOrderNo} finalised.`;
   renderCalculator();
 }
 
@@ -2244,15 +2249,6 @@ elements.sidesInput.addEventListener("input", (event) => {
   renderCalculator();
 });
 
-elements.sidesQuickOps.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-side-op]");
-  if (!button) {
-    return;
-  }
-  appendSidesPadKey(button.getAttribute("data-side-op") || "");
-  elements.sidesInput.focus();
-});
-
 elements.sidesPad.addEventListener("click", (event) => {
   const button = event.target.closest("[data-pad-key]");
   if (!button) {
@@ -2292,12 +2288,16 @@ elements.colourSwatches.addEventListener("click", (event) => {
 });
 
 elements.qtyInput.addEventListener("input", (event) => {
-  calculatorState.qty = Number(event.target.value || 0);
+  const sanitized = sanitizeDecimalRawInput(event.target.value);
+  calculatorState.qtyRaw = sanitized;
+  calculatorState.qty = parseDecimalInput(sanitized, calculatorState.qty);
   renderCalculator();
 });
 
 elements.lengthInput.addEventListener("input", (event) => {
-  calculatorState.length = Number(event.target.value || 0);
+  const sanitized = sanitizeDecimalRawInput(event.target.value);
+  calculatorState.lengthRaw = sanitized;
+  calculatorState.length = parseDecimalInput(sanitized, calculatorState.length);
   renderCalculator();
 });
 
@@ -2311,10 +2311,12 @@ elements.salesOrderInput.addEventListener("input", (event) => {
   persistCurrentOrder();
 });
 
-elements.warehouseInput.addEventListener("input", (event) => {
-  calculatorState.warehouse = event.target.value;
-  persistCurrentOrder();
-});
+if (elements.warehouseInput) {
+  elements.warehouseInput.addEventListener("input", (event) => {
+    calculatorState.warehouse = event.target.value;
+    persistCurrentOrder();
+  });
+}
 
 elements.currentOrderList.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit-order-item]");
