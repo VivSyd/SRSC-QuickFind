@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#b10f24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SRSC App">
+  <title>SRSC App</title>
+  <link rel="icon" type="image/png" href="./assets/srsc-icon.png">
+  <link rel="apple-touch-icon" href="./assets/srsc-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css?v=20260413-3">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="hero__brand">
+        <img src="./assets/srsc-logo.png" alt="Steel Roofing Supply Centre logo">
+      </div>
+      <div class="hero__eyebrow">Internal Inventory Lookup</div>
+      <div class="hero__eyebrow">Build 2026.04.13.3</div>
+      <div class="hero__topline">
+        <h1>SRSC App</h1>
+      </div>
+      <p class="hero__summary">Find the exact SAP code and sourcing branch fast, even on a bright warehouse floor.</p>
+
+      <label class="search" for="searchInput">
+        <span class="search__label">Search item, SAP code, branch, or category</span>
+        <input id="searchInput" type="search" placeholder="Try “gutter”, “PENRITH”, or a SAP code" autocomplete="off">
+      </label>
+
+      <div class="hero__stats">
+        <div>
+          <span class="stat-label">Visible Items</span>
+          <strong id="visibleCount">0</strong>
+        </div>
+        <div>
+          <span class="stat-label">Workbook Tabs</span>
+          <strong id="categoryCount">0</strong>
+        </div>
+        <div>
+          <span class="stat-label">Active Branch</span>
+          <strong id="activeBranch">All</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="list-panel" aria-labelledby="resultsHeading">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-heading__eyebrow">Results</p>
+            <h2 id="resultsHeading">Inventory Lookup</h2>
+          </div>
+          <button id="clearFiltersButton" class="ghost-button" type="button">Clear</button>
+        </div>
+
+        <div id="activeFilters" class="active-filters"></div>
+        <div id="resultsMeta" class="results-meta"></div>
+        <div id="resultsList" class="results-list" role="list"></div>
+      </section>
+
+      <section id="calculatorScreen" class="list-panel calculator-screen" aria-labelledby="calculatorHeading" hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="panel-heading__eyebrow">Tool</p>
+            <h2 id="calculatorHeading">Flashings Calculator</h2>
+          </div>
+          <button id="calculatorBackButton" class="ghost-button" type="button">Back to Finder</button>
+        </div>
+
+        <div class="calculator-layout">
+          <div class="calculator-card">
+            <h3>Sides (mm)</h3>
+            <label class="field">
+              <span>Side Values</span>
+              <input id="sidesInput" type="text" inputmode="text" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="Example: 120+200+200">
+            </label>
+            <div id="sidesQuickOps" class="sides-quick-ops" role="group" aria-label="Operator shortcuts">
+              <button type="button" class="ghost-button" data-side-op="+">+</button>
+              <button type="button" class="ghost-button" data-side-op="-">−</button>
+              <button type="button" class="ghost-button" data-side-op="*">×</button>
+              <button type="button" class="ghost-button" data-side-op="/">÷</button>
+              <button type="button" class="ghost-button" data-side-op="(">(</button>
+              <button type="button" class="ghost-button" data-side-op=")">)</button>
+              <button type="button" class="ghost-button" data-side-op=".">.</button>
+            </div>
+            <div id="sidesPad" class="calculator-pad" role="group" aria-label="Sides calculator pad">
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="clear">C</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="(">(</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key=")">)</button>
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="backspace">⌫</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="7">7</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="8">8</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="9">9</button>
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="/">÷</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="4">4</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="5">5</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="6">6</button>
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="*">×</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="1">1</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="2">2</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key="3">3</button>
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="-">−</button>
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--zero" data-pad-key="0">0</button>
+              <button type="button" class="calculator-pad__btn" data-pad-key=".">.</button>
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="+">+</button>
+            </div>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Folds</h3>
+            <div class="field-grid">
+              <label class="field">
+                <span>Standard Folds</span>
+                <input id="standardFoldsInput" type="number" min="0" value="0">
+              </label>
+              <label class="field">
+                <span>Crush Fold Count</span>
+                <input id="crushReturnInput" type="number" min="0" value="0">
+              </label>
+            </div>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Colour</h3>
+            <div class="field-grid">
+              <label class="field">
+                <span>Flashing Family</span>
+                <select id="familySelect">
+                  <option value="colorbond055">Colorbond 0.55</option>
+                  <option value="matt055">Matt 0.55</option>
+                  <option value="colorbond07">Colorbond 0.7</option>
+                  <option value="colorbond10">Colorbond 1.0</option>
+                  <option value="copper055">Copper 0.55</option>
+                </select>
+              </label>
+              <label class="field" id="colourField">
+                <span>Colour Code</span>
+                <select id="colourSelect"></select>
+              </label>
+            </div>
+            <div class="field field--stack" id="colourSwatchesField">
+              <span>Quick Colour Pick</span>
+              <div id="colourSwatches" class="colour-swatches"></div>
+            </div>
+            <details class="field field--stack">
+              <summary>Colour Legend</summary>
+              <div id="colourLegendList" class="colour-legend-list"></div>
+            </details>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Qty & Length</h3>
+            <div class="field-grid">
+              <label class="field">
+                <span>Quantity</span>
+                <input id="qtyInput" type="number" min="0" step="0.01" inputmode="decimal" value="1">
+              </label>
+              <label class="field">
+                <span>Length (m)</span>
+                <input id="lengthInput" type="number" min="0" step="0.01" inputmode="decimal" value="1">
+              </label>
+            </div>
+            <label class="checkbox-row">
+              <input id="taperingCheckbox" type="checkbox">
+              <span>Tapering (add FTAP charge)</span>
+            </label>
+          </div>
+
+          <div class="calculator-card calculator-card--output">
+            <h3>Output</h3>
+            <div id="girthLine" class="calc-line calc-line--soft"></div>
+            <div id="actualGirthLine" class="calc-line calc-line--soft"></div>
+            <div id="summaryLine" class="calc-line calc-line--muted"></div>
+            <div id="finalOutput" class="calc-output"></div>
+            <div id="matchResults" class="match-results"></div>
+            <div class="order-actions">
+              <button id="addToOrderButton" class="ghost-button" type="button">Add to Order</button>
+              <button id="clearFlashingButton" class="ghost-button" type="button">Clear All</button>
+              <button id="copyAllButton" class="primary-button" type="button">Copy All</button>
+            </div>
+            <label class="field field--stack">
+              <span>Sales Order No</span>
+              <input id="salesOrderInput" type="text" placeholder="Enter Sales Order No">
+            </label>
+            <label class="field field--stack">
+              <span>Warehouse</span>
+              <input id="warehouseInput" type="text" placeholder="Enter warehouse once per order">
+            </label>
+            <button id="finalizeOrderButton" class="primary-button primary-button--blue" type="button">Finalise Order</button>
+            <p id="copyAllFeedback" class="copy-feedback" aria-live="polite"></p>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Current Order</h3>
+            <div id="currentOrderList" class="order-list"></div>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Orders Today</h3>
+            <div id="ordersTodayList" class="order-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="addItemScreen" class="list-panel calculator-screen" aria-labelledby="addItemHeading" hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="panel-heading__eyebrow">Internal Tool</p>
+            <h2 id="addItemHeading">Add Item / Code</h2>
+          </div>
+          <button id="addItemBackButton" class="ghost-button" type="button">Back to Finder</button>
+        </div>
+
+        <div class="calculator-layout">
+          <div class="calculator-card">
+            <h3 id="customFormHeading">New Lookup Item</h3>
+            <label class="field">
+              <span>Item Name</span>
+              <input id="customNameInput" type="text" placeholder="Item Name">
+            </label>
+            <label class="field">
+              <span>Item Code</span>
+              <input id="customCodeInput" type="text" placeholder="Item Code">
+            </label>
+            <label class="field">
+              <span>Notes</span>
+              <textarea id="customNotesInput" class="field__textarea" placeholder="Notes (pack size, rules)"></textarea>
+            </label>
+            <label class="field">
+              <span>Item Image</span>
+              <input id="customImageInput" type="file" accept="image/*">
+            </label>
+            <div id="customImagePreview" class="image-preview" hidden></div>
+            <div class="field field--stack">
+              <span>Branch Labels</span>
+              <div id="internalSourceOptions" class="source-options"></div>
+            </div>
+            <label class="field">
+              <span>Order If Out From</span>
+              <select id="customFallbackBranchSelect"></select>
+            </label>
+            <div class="field field--stack">
+              <span>Supplier Labels</span>
+              <div id="externalSuppliersList" class="source-options"></div>
+              <div class="source-add-row">
+                <input id="externalSupplierInput" type="text" placeholder="Add supplier name">
+                <button id="addExternalSupplierButton" class="ghost-button" type="button">Add Supplier</button>
+              </div>
+            </div>
+            <label class="checkbox-row">
+              <input id="customPreferredInput" type="checkbox">
+              <span>Preferred Code</span>
+            </label>
+            <div class="item-actions">
+              <button id="saveCustomItemButton" class="primary-button primary-button--blue" type="button">Save Item</button>
+              <button id="cancelEditItemButton" class="ghost-button" type="button" hidden>Cancel Edit</button>
+            </div>
+            <p id="customSaveFeedback" class="copy-feedback" aria-live="polite"></p>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Saved Custom Items</h3>
+            <div id="customItemsList" class="order-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <aside class="side-nav-rail">
+      <button id="sideHomeButton" class="side-nav-button side-nav-button--home" type="button">
+        Home
+      </button>
+      <button id="sideFilterButton" class="side-nav-button side-nav-button--filter" type="button">
+        Filter
+      </button>
+      <button id="floatingCalculatorButton" class="side-nav-button side-nav-button--calc" type="button">
+        Flashings Calculator
+      </button>
+      <button id="floatingAddItemButton" class="side-nav-button side-nav-button--item" type="button">
+        Add Item / Code
+      </button>
+    </aside>
+  </div>
+
+  <div id="filterSheet" class="sheet" aria-hidden="true">
+    <div class="sheet__backdrop" data-close-sheet="true"></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="filterTitle">
+      <div class="sheet__handle"></div>
+      <div class="sheet__header">
+        <div>
+          <p class="panel-heading__eyebrow">Filter Menu</p>
+          <h2 id="filterTitle">Sourcing Branch</h2>
+        </div>
+        <button class="ghost-button" type="button" data-close-sheet="true">Close</button>
+      </div>
+      <div id="branchOptions" class="branch-options"></div>
+    </div>
+  </div>
+
+  <div id="detailScreen" class="detail-screen" aria-hidden="true">
+    <div class="detail-screen__panel">
+      <div class="detail-screen__header">
+        <button id="backButton" class="ghost-button" type="button">Back</button>
+        <span class="detail-screen__tag">Item Detail</span>
+      </div>
+
+      <div class="detail-screen__hero">
+        <div id="detailImageWrap" class="detail-image"></div>
+        <div class="detail-screen__titles">
+          <p id="detailCategory" class="detail-category"></p>
+          <h2 id="detailName"></h2>
+          <p id="detailBranch" class="detail-branch"></p>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <article class="detail-card detail-card--code">
+          <span class="detail-card__label">SAP Code</span>
+          <strong id="detailSapCode" class="detail-card__code"></strong>
+          <label class="checkbox-row">
+            <input id="detailPreferredCheckbox" type="checkbox">
+            <span>Preferred Code (Most Used)</span>
+          </label>
+          <button id="copySapButton" class="primary-button" type="button">Copy to Clipboard</button>
+          <p id="copyFeedback" class="copy-feedback" aria-live="polite"></p>
+        </article>
+
+        <article class="detail-card">
+          <span class="detail-card__label">Sourcing Branch</span>
+          <strong id="detailBranchValue"></strong>
+        </article>
+
+        <article class="detail-card">
+          <span class="detail-card__label">Item Group</span>
+          <strong id="detailGroup"></strong>
+        </article>
+
+        <article class="detail-card detail-card--full">
+          <span class="detail-card__label">Item Description</span>
+          <p id="detailDescription"></p>
+          <div id="detailEditFields" class="detail-edit-fields" hidden>
+            <div class="detail-edit-banner">
+              Edit mode is active. Upload an item image below, then click `Save Changes`.
+            </div>
+            <label class="field">
+              <span>Upload Item Image</span>
+              <input id="detailImageInput" type="file" accept="image/*">
+            </label>
+            <div id="detailImagePreview" class="image-preview" hidden></div>
+            <label class="field">
+              <span>Item Name</span>
+              <input id="detailEditName" type="text">
+            </label>
+            <label class="field">
+              <span>SAP Code</span>
+              <input id="detailEditCode" type="text">
+            </label>
+            <label class="field">
+              <span>Preferred Source Summary</span>
+              <input id="detailEditBranch" type="text" placeholder="Auto-generated from labels" readonly>
+            </label>
+            <label class="field">
+              <span>Item Group</span>
+              <input id="detailEditGroup" type="text">
+            </label>
+            <label class="field">
+              <span>Item Description</span>
+              <textarea id="detailEditDescription" class="field__textarea"></textarea>
+            </label>
+            <div class="field field--stack">
+              <span>Branch Labels</span>
+              <div id="detailBranchOptions" class="source-options"></div>
+            </div>
+            <label class="field">
+              <span>Order If Out From</span>
+              <select id="detailFallbackBranchSelect"></select>
+            </label>
+            <div class="field field--stack">
+              <span>Supplier Labels</span>
+              <div id="detailSupplierOptions" class="source-options"></div>
+              <div class="source-add-row">
+                <input id="detailSupplierInput" type="text" placeholder="Add supplier name">
+                <button id="detailAddSupplierButton" class="ghost-button" type="button">Add Supplier</button>
+              </div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button id="editDetailItemButton" class="ghost-button" type="button">Edit Item</button>
+            <button id="saveDetailItemButton" class="primary-button primary-button--blue" type="button" hidden>Save Changes</button>
+            <button id="cancelDetailEditButton" class="ghost-button" type="button" hidden>Cancel</button>
+            <button id="deleteDetailItemButton" class="danger-button" type="button">Delete Item</button>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <script src="./data/inventory-data.js?v=20260413-3"></script>
+  <script src="./app.js?v=20260413-3"></script>
+</body>
+</html>

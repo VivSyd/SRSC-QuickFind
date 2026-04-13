@@ -1,0 +1,12 @@
+﻿Reconciled On: 2026-04-12T18:31:02
+Mode: master-only
+Master Workbook: C:\Users\dasku\OneDrive\Documents\New project\MASTER LIST.xlsx
+Legacy Workbook: C:\Users\dasku\OneDrive\Documents\New project\viv codes copy.xlsx
+Master Records: 23479
+Master Unique SAP: 23478
+Legacy Unique SAP: 0
+Added From Legacy: 0
+Added SAP Codes: 
+Final Records: 23478
+Final Categories: 12
+Final Branches: 9
