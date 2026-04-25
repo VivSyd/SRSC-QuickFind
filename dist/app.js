@@ -443,6 +443,21 @@ function normalizeSupplierName(value) {
     .trim();
 }
 
+function inferSupplierFromSapCode(sapCode) {
+  const code = String(sapCode || "").trim().toUpperCase();
+  if (code.startsWith("LYS")) {
+    return "Lysaght";
+  }
+  if (code.startsWith("MET")) {
+    return "MET";
+  }
+  return "";
+}
+
+function isSupplierMappedCodeItem(item) {
+  return Boolean(inferSupplierFromSapCode(item?.sapCode || item?.code));
+}
+
 function confirmDeleteAction(targetLabel) {
   return window.confirm(`Delete "${targetLabel}" permanently?`);
 }
@@ -745,6 +760,11 @@ function normalizeItemSourceData(item) {
   }
 
   const uniqueBranches = [...new Set(branches)];
+  const inferredSupplier = inferSupplierFromSapCode(item.sapCode || item.code);
+  if (inferredSupplier) {
+    suppliers.push(inferredSupplier);
+  }
+
   const uniqueSuppliers = [...new Set(suppliers)];
   const fallbackBranch = INTERNAL_SOURCE_BRANCHES.includes(item.fallbackBranch)
     ? item.fallbackBranch
@@ -897,6 +917,11 @@ function getFilteredItems() {
       const preferredDelta = Number(Boolean(right.preferred)) - Number(Boolean(left.preferred));
       if (preferredDelta !== 0) {
         return preferredDelta;
+      }
+
+      const supplierMappedDelta = Number(isSupplierMappedCodeItem(left)) - Number(isSupplierMappedCodeItem(right));
+      if (supplierMappedDelta !== 0) {
+        return supplierMappedDelta;
       }
 
       return String(left.itemName || "").localeCompare(String(right.itemName || ""));
