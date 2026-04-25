@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="./assets/srsc-icon.png">
   <link rel="apple-touch-icon" href="./assets/srsc-icon.png">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=20260414-1">
+  <link rel="stylesheet" href="./styles.css?v=20260425-3">
 </head>
 <body>
   <div class="app-shell">
@@ -20,7 +20,7 @@
         <img src="./assets/srsc-logo.png" alt="Steel Roofing Supply Centre logo">
       </div>
       <div class="hero__eyebrow">Internal Inventory Lookup</div>
-      <div class="hero__eyebrow">Build 2026.04.14.1</div>
+      <div class="hero__eyebrow">Build 2026.04.25.3</div>
       <div class="hero__topline">
         <h1>SRSC App</h1>
       </div>
@@ -255,8 +255,46 @@
           </div>
         </div>
       </section>
+
+      <section id="aboutScreen" class="list-panel calculator-screen" aria-labelledby="aboutHeading" hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="panel-heading__eyebrow">Company</p>
+            <h2 id="aboutHeading">About Us</h2>
+          </div>
+          <button id="aboutBackButton" class="ghost-button" type="button">Back to Finder</button>
+        </div>
+
+        <div class="about-layout">
+          <article class="calculator-card">
+            <div class="about-brand">
+              <img src="./assets/srsc-logo.png" alt="Steel Roofing Supply Centre logo">
+            </div>
+            <h3>Steel Roofing Supply Centre</h3>
+            <p class="about-summary">
+              View the SRSC brochure directly in-app. Use this page for onboarding, product overview, and quick company reference while working on the floor.
+            </p>
+            <a class="primary-button about-download" href="./assets/srsc-brochure.pdf" target="_blank" rel="noopener noreferrer">
+              Open Brochure (PDF)
+            </a>
+          </article>
+
+          <article class="calculator-card about-brochure-card">
+            <h3>SRSC Brochure</h3>
+            <iframe
+              class="about-brochure-frame"
+              src="./assets/srsc-brochure.pdf#view=FitH"
+              title="SRSC brochure PDF"
+              loading="lazy"
+            ></iframe>
+          </article>
+        </div>
+      </section>
     </main>
     <aside class="side-nav-rail">
+      <div class="side-nav-brand">
+        <img src="./assets/srsc-icon.png" alt="SRSC icon">
+      </div>
       <button id="sideHomeButton" class="side-nav-button side-nav-button--home" type="button">
         Home
       </button>
@@ -268,6 +306,9 @@
       </button>
       <button id="floatingAddItemButton" class="side-nav-button side-nav-button--item" type="button">
         Add Item / Code
+      </button>
+      <button id="sideAboutButton" class="side-nav-button side-nav-button--about" type="button">
+        About Us
       </button>
     </aside>
   </div>
@@ -385,7 +426,7 @@
     </div>
   </div>
 
-  <script src="./data/inventory-data.js?v=20260414-1"></script>
-  <script src="./app.js?v=20260414-1"></script>
+  <script src="./data/inventory-data.js?v=20260425-3"></script>
+  <script src="./app.js?v=20260425-3"></script>
 </body>
 </html>

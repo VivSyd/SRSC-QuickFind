@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Tracker</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Personal Budget</p>
+        <h1>Weekly Money Control</h1>
+      </div>
+      <button id="themeToggle" class="ghost-btn" type="button">Toggle Theme</button>
+    </header>
+
+    <nav class="tabbar" aria-label="Main screens">
+      <button class="tab is-active" data-screen="home">Home</button>
+      <button class="tab" data-screen="payday">Payday</button>
+      <button class="tab" data-screen="accounts">Accounts</button>
+      <button class="tab" data-screen="bills">Bills</button>
+      <button class="tab" data-screen="logSpend">Log Spend</button>
+      <button class="tab" data-screen="today">Today</button>
+      <button class="tab" data-screen="savers">Savers</button>
+      <button class="tab" data-screen="weekly">Weekly</button>
+      <button class="tab" data-screen="alerts">Alerts</button>
+    </nav>
+
+    <main id="screenRoot" class="screen-root"></main>
+  </div>
+
+  <template id="cardTemplate">
+    <section class="card"></section>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -136,6 +136,7 @@ const elements = {
   filterButton: document.querySelector("#filterButton"),
   sideHomeButton: document.querySelector("#sideHomeButton"),
   sideFilterButton: document.querySelector("#sideFilterButton"),
+  sideAboutButton: document.querySelector("#sideAboutButton"),
   filterSheet: document.querySelector("#filterSheet"),
   branchOptions: document.querySelector("#branchOptions"),
   detailScreen: document.querySelector("#detailScreen"),
@@ -171,10 +172,12 @@ const elements = {
   listPanel: document.querySelector(".list-panel"),
   calculatorScreen: document.querySelector("#calculatorScreen"),
   addItemScreen: document.querySelector("#addItemScreen"),
+  aboutScreen: document.querySelector("#aboutScreen"),
   floatingCalculatorButton: document.querySelector("#floatingCalculatorButton"),
   floatingAddItemButton: document.querySelector("#floatingAddItemButton"),
   calculatorBackButton: document.querySelector("#calculatorBackButton"),
   addItemBackButton: document.querySelector("#addItemBackButton"),
+  aboutBackButton: document.querySelector("#aboutBackButton"),
   sidesInput: document.querySelector("#sidesInput"),
   sidesPad: document.querySelector("#sidesPad"),
   standardFoldsInput: document.querySelector("#standardFoldsInput"),
@@ -471,6 +474,12 @@ const items = (dataset.items || []).map((item) => ({
     .toLowerCase(),
 }));
 
+let cachedCatalogItems = null;
+
+function markCatalogDirty() {
+  cachedCatalogItems = null;
+}
+
 function getPreferredFlag(itemId, fallbackValue) {
   if (Object.prototype.hasOwnProperty.call(calculatorState.preferredFlags, itemId)) {
     return Boolean(calculatorState.preferredFlags[itemId]);
@@ -485,9 +494,14 @@ function setPreferredFlag(itemId, isPreferred) {
 
   calculatorState.preferredFlags[itemId] = Boolean(isPreferred);
   persistPreferredFlags();
+  markCatalogDirty();
 }
 
 function getCatalogItems() {
+  if (cachedCatalogItems) {
+    return cachedCatalogItems;
+  }
+
   const customLookupItems = calculatorState.customItems
     .filter((item) => !calculatorState.deletedItems.includes(`custom:${item.uid}`))
     .map((item) => {
@@ -616,7 +630,8 @@ function getCatalogItems() {
       };
     });
 
-  return applyWildcardMasterDedup([...customLookupItems, ...groupedItems]);
+  cachedCatalogItems = applyWildcardMasterDedup([...customLookupItems, ...groupedItems]);
+  return cachedCatalogItems;
 }
 
 function applyWildcardMasterDedup(catalogItems) {
@@ -1067,6 +1082,7 @@ function updateItemPreferred(itemId, isPreferred) {
     persistItemChanges();
   }
 
+  markCatalogDirty();
   renderResults();
   renderCustomItems();
 }
@@ -1186,6 +1202,7 @@ function saveDetailItem() {
   }
 
   elements.copyFeedback.textContent = "Changes saved.";
+  markCatalogDirty();
   renderResults();
   renderCustomItems();
   openDetail(itemId);
@@ -1203,12 +1220,14 @@ function showCalculator() {
   elements.listPanel.hidden = true;
   elements.calculatorScreen.hidden = false;
   elements.addItemScreen.hidden = true;
+  elements.aboutScreen.hidden = true;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function showFinder() {
   elements.calculatorScreen.hidden = true;
   elements.addItemScreen.hidden = true;
+  elements.aboutScreen.hidden = true;
   elements.listPanel.hidden = false;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1217,11 +1236,20 @@ function showAddItem() {
   elements.listPanel.hidden = true;
   elements.calculatorScreen.hidden = true;
   elements.addItemScreen.hidden = false;
+  elements.aboutScreen.hidden = true;
   if (calculatorState.editingItemRef === null) {
     resetCustomItemForm();
   }
   renderSourceControls();
   renderCustomItems();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showAbout() {
+  elements.listPanel.hidden = true;
+  elements.calculatorScreen.hidden = true;
+  elements.addItemScreen.hidden = true;
+  elements.aboutScreen.hidden = false;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1272,6 +1300,7 @@ function removeSupplierLabel(supplierToDelete) {
     };
   });
   calculatorState.itemOverrides = updatedOverrides;
+  markCatalogDirty();
 
   persistSuppliers();
   persistCustomItems();
@@ -1857,6 +1886,7 @@ function deleteItem(itemId) {
   if (calculatorState.editingItemRef === itemId) {
     resetCustomItemForm();
   }
+  markCatalogDirty();
   closeDetail();
   elements.customSaveFeedback.textContent = `${item.itemName || item.name} deleted.`;
   renderCustomItems();
@@ -2026,6 +2056,7 @@ function saveCustomItem() {
 
   elements.customSaveFeedback.textContent = calculatorState.editingItemRef ? "Changes saved." : "Saved.";
   resetCustomItemForm();
+  markCatalogDirty();
   renderCustomItems();
   renderResults();
 }
@@ -2042,6 +2073,11 @@ elements.sideHomeButton.addEventListener("click", () => {
   showFinder();
 });
 elements.sideFilterButton.addEventListener("click", openSheet);
+elements.sideAboutButton.addEventListener("click", () => {
+  closeDetail();
+  closeSheet();
+  showAbout();
+});
 elements.clearFiltersButton.addEventListener("click", clearFilters);
 elements.backButton.addEventListener("click", closeDetail);
 elements.copySapButton.addEventListener("click", copySapCode);
@@ -2069,6 +2105,7 @@ elements.floatingCalculatorButton.addEventListener("click", showCalculator);
 elements.floatingAddItemButton.addEventListener("click", showAddItem);
 elements.calculatorBackButton.addEventListener("click", showFinder);
 elements.addItemBackButton.addEventListener("click", showFinder);
+elements.aboutBackButton.addEventListener("click", showFinder);
 elements.addToOrderButton.addEventListener("click", addToOrder);
 elements.clearFlashingButton.addEventListener("click", () => {
   resetFlashingForm();
