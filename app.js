@@ -194,6 +194,10 @@ const elements = {
   qtyInput: document.querySelector("#qtyInput"),
   lengthInput: document.querySelector("#lengthInput"),
   taperingCheckbox: document.querySelector("#taperingCheckbox"),
+  fulfilmentDeliveryInput: document.querySelector("#fulfilmentDeliveryInput"),
+  fulfilmentOpuInput: document.querySelector("#fulfilmentOpuInput"),
+  siteTimeRow: document.querySelector("#siteTimeRow"),
+  siteTimeCheckbox: document.querySelector("#siteTimeCheckbox"),
   girthLine: document.querySelector("#girthLine"),
   actualGirthLine: document.querySelector("#actualGirthLine"),
   summaryLine: document.querySelector("#summaryLine"),
@@ -253,6 +257,8 @@ const calculatorState = {
   qtyRaw: "1",
   length: 1,
   lengthRaw: "1",
+  fulfilment: "delivery",
+  hasSiteTime: false,
   orders: [],
   currentOrderItems: [],
   salesOrderNo: "",
@@ -1707,7 +1713,10 @@ function getCalculatorValues() {
   const mainCode = `${workbookMainCode} ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH`;
   const extraFoldCode = extraFolds > 0 ? `\nF${extraFolds}B ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH` : "";
   const taperCode = calculatorState.isTapering ? `\nFTAP ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH` : "";
-  const finalOutput = mainCode + extraFoldCode + taperCode;
+  const deliveryChargeCode = calculatorState.fulfilment === "delivery" ? `\nDelivery Charges` : "";
+  const siteTimeChargeCode =
+    calculatorState.fulfilment === "delivery" && calculatorState.hasSiteTime ? `\nSite Time Charges` : "";
+  const finalOutput = mainCode + extraFoldCode + taperCode + deliveryChargeCode + siteTimeChargeCode;
   const mainMatch = items.find((item) => item.sapCode === workbookMainCode);
   const extraMatch = extraFolds > 0 ? items.find((item) => item.sapCode === `F${extraFolds}B`) : null;
   const fallbackMatches = items
@@ -1754,6 +1763,10 @@ function renderCalculator() {
   elements.qtyInput.value = calculatorState.qtyRaw;
   elements.lengthInput.value = calculatorState.lengthRaw;
   elements.taperingCheckbox.checked = calculatorState.isTapering;
+  elements.fulfilmentDeliveryInput.checked = calculatorState.fulfilment === "delivery";
+  elements.fulfilmentOpuInput.checked = calculatorState.fulfilment === "opu";
+  elements.siteTimeRow.hidden = calculatorState.fulfilment !== "delivery";
+  elements.siteTimeCheckbox.checked = calculatorState.fulfilment === "delivery" && calculatorState.hasSiteTime;
   elements.salesOrderInput.value = calculatorState.salesOrderNo;
   if (elements.warehouseInput) {
     elements.warehouseInput.value = calculatorState.warehouse;
@@ -1968,6 +1981,8 @@ function resetFlashingForm() {
   calculatorState.qtyRaw = "1";
   calculatorState.length = 1;
   calculatorState.lengthRaw = "1";
+  calculatorState.fulfilment = "delivery";
+  calculatorState.hasSiteTime = false;
   calculatorState.editingCurrentOrderIndex = null;
 }
 
@@ -1990,6 +2005,9 @@ function loadFlashingIntoForm(orderItem, index) {
   calculatorState.qtyRaw = String(orderItem.calculatorInput.qty || 1);
   calculatorState.length = Number(orderItem.calculatorInput.length || 1);
   calculatorState.lengthRaw = String(orderItem.calculatorInput.length || 1);
+  calculatorState.fulfilment = orderItem.calculatorInput.fulfilment === "opu" ? "opu" : "delivery";
+  calculatorState.hasSiteTime =
+    calculatorState.fulfilment === "delivery" && Boolean(orderItem.calculatorInput.hasSiteTime);
   calculatorState.editingCurrentOrderIndex = index;
   elements.copyAllFeedback.textContent = "Editing current order item.";
   renderCalculator();
@@ -2112,6 +2130,8 @@ function addToOrder() {
       colour: calculatorState.colour,
       qty: calculatorState.qty,
       length: calculatorState.length,
+      fulfilment: calculatorState.fulfilment,
+      hasSiteTime: calculatorState.hasSiteTime,
     },
   };
 
@@ -2610,6 +2630,28 @@ elements.lengthInput.addEventListener("input", (event) => {
 
 elements.taperingCheckbox.addEventListener("change", (event) => {
   calculatorState.isTapering = event.target.checked;
+  renderCalculator();
+});
+
+elements.fulfilmentDeliveryInput.addEventListener("change", (event) => {
+  if (!event.target.checked) {
+    return;
+  }
+  calculatorState.fulfilment = "delivery";
+  renderCalculator();
+});
+
+elements.fulfilmentOpuInput.addEventListener("change", (event) => {
+  if (!event.target.checked) {
+    return;
+  }
+  calculatorState.fulfilment = "opu";
+  calculatorState.hasSiteTime = false;
+  renderCalculator();
+});
+
+elements.siteTimeCheckbox.addEventListener("change", (event) => {
+  calculatorState.hasSiteTime = event.target.checked;
   renderCalculator();
 });
 
