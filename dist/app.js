@@ -258,6 +258,9 @@ const calculatorState = {
   salesOrderNo: "",
   warehouse: "",
   orderCounter: 1,
+  expandedOrderId: null,
+  editingFinalizedOrderId: null,
+  editingFinalizedOrderSalesOrderNo: "",
   customItems: [
     {
       uid: "custom-green-plug-35mm",
@@ -344,7 +347,21 @@ function loadPersistedState() {
   }
 
   if (Array.isArray(parsedOrders)) {
-    calculatorState.orders = parsedOrders;
+    calculatorState.orders = parsedOrders
+      .filter((entry) => entry && typeof entry === "object")
+      .map((order, index) => ({
+        orderId: Number(order.orderId) || index + 1,
+        salesOrderNo: String(order.salesOrderNo || ""),
+        timestamp: String(order.timestamp || ""),
+        items: Array.isArray(order.items)
+          ? order.items.map((item) => ({
+              finalOutput: String(item?.finalOutput || ""),
+              summaryLine: String(item?.summaryLine || ""),
+              girthLine: String(item?.girthLine || ""),
+              actualGirthLine: String(item?.actualGirthLine || ""),
+            }))
+          : [],
+      }));
   }
 
   if (savedOrderCounter) {
@@ -1832,16 +1849,75 @@ function renderOrdersToday() {
     return;
   }
 
+  const getOrderItemDisplayText = (item) => {
+    const finalOutput = String(item?.finalOutput || "").trim();
+    if (finalOutput) {
+      return finalOutput;
+    }
+    return [item?.summaryLine, item?.girthLine, item?.actualGirthLine]
+      .filter(Boolean)
+      .join("\n");
+  };
+
   elements.ordersTodayList.innerHTML = calculatorState.orders
     .map(
-      (order, index) => `
+      (order, index) => {
+        const isExpanded = calculatorState.expandedOrderId === order.orderId;
+        const isEditing = calculatorState.editingFinalizedOrderId === order.orderId;
+        return `
         <div class="order-day-card">
-          <div>
-            <strong>${index + 1}. SO: ${escapeHtml(order.salesOrderNo || "N/A")}</strong>
-            <div class="order-day-card__meta">${escapeHtml(order.timestamp || "")}</div>
+          <div class="order-day-card__header">
+            <button class="ghost-button" type="button" data-toggle-order="${order.orderId}" aria-expanded="${isExpanded ? "true" : "false"}">
+              <span><strong>${index + 1}. SO: ${escapeHtml(order.salesOrderNo || "N/A")}</strong></span>
+              <span>${isExpanded ? "Hide Codes" : "View Codes"}</span>
+            </button>
+            <div class="item-actions">
+              <button class="ghost-button" type="button" data-edit-finalized-order="${order.orderId}">Edit</button>
+              <button class="danger-button" type="button" data-delete-finalized-order="${order.orderId}">Delete</button>
+            </div>
           </div>
+          <div class="order-day-card__meta">${escapeHtml(order.timestamp || "")}</div>
+          ${
+            isEditing
+              ? `<div class="order-day-card__details">
+                  <label class="field-label" for="editFinalizedOrderNo-${order.orderId}">Sales Order No</label>
+                  <input
+                    id="editFinalizedOrderNo-${order.orderId}"
+                    class="field-input"
+                    type="text"
+                    data-edit-so-input="${order.orderId}"
+                    value="${escapeHtml(calculatorState.editingFinalizedOrderSalesOrderNo)}"
+                  />
+                  <div class="item-actions">
+                    <button class="primary-button" type="button" data-save-finalized-order="${order.orderId}">Save</button>
+                    <button class="ghost-button" type="button" data-cancel-finalized-order="true">Cancel</button>
+                  </div>
+                </div>`
+              : ""
+          }
+          ${
+            isExpanded
+              ? `<div class="order-day-card__details">
+                ${
+                  Array.isArray(order.items) && order.items.length > 0
+                    ? order.items
+                        .map(
+                          (item, itemIndex) => `
+                            <div class="order-item">
+                              <div class="order-item__type">Flashing ${itemIndex + 1}</div>
+                              <div class="order-day-card__output">${escapeHtml(getOrderItemDisplayText(item) || "No code output saved.")}</div>
+                            </div>
+                          `
+                        )
+                        .join("")
+                  : `<div class="calc-line calc-line--muted">No flashing codes saved for this order.</div>`
+                }
+              </div>`
+              : ""
+          }
         </div>
-      `
+      `;
+      }
     )
     .join("");
 }
@@ -2074,9 +2150,18 @@ function finalizeOrder() {
     orderId: calculatorState.orderCounter,
     salesOrderNo: calculatorState.salesOrderNo,
     timestamp: printableOrder.timestamp,
+    items: printableOrder.items.map((item) => ({
+      finalOutput: String(item?.finalOutput || ""),
+      summaryLine: String(item?.summaryLine || ""),
+      girthLine: String(item?.girthLine || ""),
+      actualGirthLine: String(item?.actualGirthLine || ""),
+    })),
   };
 
   calculatorState.orders = [...calculatorState.orders, orderSummary];
+  calculatorState.expandedOrderId = orderSummary.orderId;
+  calculatorState.editingFinalizedOrderId = null;
+  calculatorState.editingFinalizedOrderSalesOrderNo = "";
   calculatorState.currentOrderItems = [];
   calculatorState.salesOrderNo = "";
   calculatorState.warehouse = "";
@@ -2086,6 +2171,66 @@ function finalizeOrder() {
   downloadOrderJson(printableOrder);
   elements.copyAllFeedback.textContent = `Sales order ${orderSummary.salesOrderNo} finalised.`;
   renderCalculator();
+}
+
+function startEditFinalizedOrder(orderId) {
+  const order = calculatorState.orders.find((entry) => entry.orderId === orderId);
+  if (!order) {
+    return;
+  }
+
+  calculatorState.editingFinalizedOrderId = orderId;
+  calculatorState.editingFinalizedOrderSalesOrderNo = String(order.salesOrderNo || "");
+  calculatorState.expandedOrderId = orderId;
+  renderOrdersToday();
+}
+
+function saveFinalizedOrder(orderId) {
+  const nextSalesOrderNo = calculatorState.editingFinalizedOrderSalesOrderNo.trim();
+  if (!nextSalesOrderNo) {
+    elements.copyAllFeedback.textContent = "Sales Order No cannot be blank.";
+    return;
+  }
+
+  calculatorState.orders = calculatorState.orders.map((order) =>
+    order.orderId === orderId
+      ? { ...order, salesOrderNo: nextSalesOrderNo }
+      : order
+  );
+  calculatorState.editingFinalizedOrderId = null;
+  calculatorState.editingFinalizedOrderSalesOrderNo = "";
+  persistOrders();
+  elements.copyAllFeedback.textContent = `Sales order updated to ${nextSalesOrderNo}.`;
+  renderOrdersToday();
+}
+
+function cancelEditFinalizedOrder() {
+  calculatorState.editingFinalizedOrderId = null;
+  calculatorState.editingFinalizedOrderSalesOrderNo = "";
+  renderOrdersToday();
+}
+
+function deleteFinalizedOrder(orderId) {
+  const order = calculatorState.orders.find((entry) => entry.orderId === orderId);
+  if (!order) {
+    return;
+  }
+
+  if (!confirmDeleteAction(`sales order ${order.salesOrderNo || order.orderId}`)) {
+    return;
+  }
+
+  calculatorState.orders = calculatorState.orders.filter((entry) => entry.orderId !== orderId);
+  if (calculatorState.expandedOrderId === orderId) {
+    calculatorState.expandedOrderId = null;
+  }
+  if (calculatorState.editingFinalizedOrderId === orderId) {
+    calculatorState.editingFinalizedOrderId = null;
+    calculatorState.editingFinalizedOrderSalesOrderNo = "";
+  }
+  persistOrders();
+  elements.copyAllFeedback.textContent = `Sales order ${order.salesOrderNo || order.orderId} deleted.`;
+  renderOrdersToday();
 }
 
 function downloadOrderJson(order) {
@@ -2497,12 +2642,46 @@ elements.currentOrderList.addEventListener("click", (event) => {
 });
 
 elements.ordersTodayList.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-copy-order]");
+  const editButton = event.target.closest("[data-edit-finalized-order]");
+  if (editButton) {
+    startEditFinalizedOrder(Number(editButton.getAttribute("data-edit-finalized-order")));
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-delete-finalized-order]");
+  if (deleteButton) {
+    deleteFinalizedOrder(Number(deleteButton.getAttribute("data-delete-finalized-order")));
+    return;
+  }
+
+  const saveButton = event.target.closest("[data-save-finalized-order]");
+  if (saveButton) {
+    saveFinalizedOrder(Number(saveButton.getAttribute("data-save-finalized-order")));
+    return;
+  }
+
+  const cancelButton = event.target.closest("[data-cancel-finalized-order]");
+  if (cancelButton) {
+    cancelEditFinalizedOrder();
+    return;
+  }
+
+  const button = event.target.closest("[data-toggle-order]");
   if (!button) {
     return;
   }
 
-  copySingleOrder(Number(button.getAttribute("data-copy-order")));
+  const orderId = Number(button.getAttribute("data-toggle-order"));
+  calculatorState.expandedOrderId = calculatorState.expandedOrderId === orderId ? null : orderId;
+  renderOrdersToday();
+});
+
+elements.ordersTodayList.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-edit-so-input]");
+  if (!input) {
+    return;
+  }
+  calculatorState.editingFinalizedOrderSalesOrderNo = input.value;
 });
 
 elements.customItemsList.addEventListener("click", (event) => {
