@@ -1,4 +1,4 @@
-﻿const dataset = window.SAP_FINDER_DATA || {
+const dataset = window.SAP_FINDER_DATA || {
   generatedAt: "",
   recordCount: 0,
   categoryCount: 0,
@@ -437,10 +437,14 @@ function persistSuppliers() {
 }
 
 function normalizeSupplierName(value) {
-  return String(value || "")
+  const normalized = String(value || "")
     .replace(/^(SUP:\s*)+/i, "")
     .replace(/\s+/g, " ")
     .trim();
+  if (/^stramit codes$/i.test(normalized)) {
+    return "Stramit";
+  }
+  return normalized;
 }
 
 function inferSupplierFromSapCode(sapCode) {
@@ -451,11 +455,45 @@ function inferSupplierFromSapCode(sapCode) {
   if (code.startsWith("MET")) {
     return "MET";
   }
+  if (code.startsWith("STR")) {
+    return "Stramit";
+  }
   return "";
 }
 
 function isSupplierMappedCodeItem(item) {
   return Boolean(inferSupplierFromSapCode(item?.sapCode || item?.code));
+}
+
+function getSearchMatchRank(item, query) {
+  const normalizedQuery = String(query || "").trim().toUpperCase();
+  if (!normalizedQuery) {
+    return 99;
+  }
+
+  const sapCode = String(item?.sapCode || "").toUpperCase();
+  const itemName = String(item?.itemName || "").toUpperCase();
+  const itemDescription = String(item?.itemDescription || "").toUpperCase();
+
+  if (sapCode === normalizedQuery) {
+    return 0;
+  }
+  if (sapCode.startsWith(normalizedQuery)) {
+    return 1;
+  }
+  if (sapCode.includes(normalizedQuery)) {
+    return 2;
+  }
+  if (itemName.startsWith(normalizedQuery)) {
+    return 3;
+  }
+  if (itemName.includes(normalizedQuery)) {
+    return 4;
+  }
+  if (itemDescription.includes(normalizedQuery)) {
+    return 5;
+  }
+  return 6;
 }
 
 function confirmDeleteAction(targetLabel) {
@@ -897,6 +935,7 @@ function buildGroupedVariantItems(importedItems) {
 
 function getFilteredItems() {
   const search = state.searchTerm.trim().toLowerCase();
+  const rawQuery = state.searchTerm.trim();
   const showInitialEmpty = !search && state.selectedBranch === "All";
   if (showInitialEmpty) {
     return [];
@@ -922,6 +961,11 @@ function getFilteredItems() {
       const supplierMappedDelta = Number(isSupplierMappedCodeItem(left)) - Number(isSupplierMappedCodeItem(right));
       if (supplierMappedDelta !== 0) {
         return supplierMappedDelta;
+      }
+
+      const rankDelta = getSearchMatchRank(left, rawQuery) - getSearchMatchRank(right, rawQuery);
+      if (rankDelta !== 0) {
+        return rankDelta;
       }
 
       return String(left.itemName || "").localeCompare(String(right.itemName || ""));
