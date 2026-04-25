@@ -55,6 +55,7 @@ input {
   grid-template-columns: minmax(280px, 340px) minmax(520px, 1fr) 220px;
   gap: 16px;
   align-items: start;
+  transition: grid-template-columns 220ms ease, gap 220ms ease;
 }
 
 .hero,
@@ -74,6 +75,15 @@ input {
   margin-bottom: 0;
   max-height: calc(100vh - 36px);
   overflow: auto;
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.app-shell.app-shell--calculator-view {
+  grid-template-columns: minmax(0, 1fr) 220px;
+}
+
+.app-shell.app-shell--calculator-view .hero {
+  display: none;
 }
 
 .hero__brand {
@@ -552,6 +562,10 @@ input {
     width: min(100%, 520px);
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .app-shell.app-shell--calculator-view {
+    grid-template-columns: 1fr;
   }
 
   .hero {

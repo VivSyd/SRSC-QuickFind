@@ -12,6 +12,7 @@ const state = {
   selectedBranch: "All",
   selectedItemId: null,
   maxVisibleResults: 160,
+  activeView: "finder",
 };
 
 const familyConfig = {
@@ -125,6 +126,7 @@ const STORAGE_KEYS = {
 };
 
 const elements = {
+  appShell: document.querySelector(".app-shell"),
   finderSearchBlock: document.querySelector("#finderSearchBlock"),
   searchInput: document.querySelector("#searchInput"),
   resultsList: document.querySelector("#resultsList"),
@@ -229,6 +231,15 @@ function setFinderSearchVisible(isVisible) {
     return;
   }
   elements.finderSearchBlock.hidden = !isVisible;
+}
+
+function setActiveView(view) {
+  state.activeView = view;
+  const calculatorActive = view === "calculator";
+  if (elements.appShell) {
+    elements.appShell.classList.toggle("app-shell--calculator-view", calculatorActive);
+  }
+  setFinderSearchVisible(!calculatorActive);
 }
 
 const calculatorState = {
@@ -1327,29 +1338,29 @@ function clearFilters() {
 }
 
 function showCalculator() {
+  setActiveView("calculator");
   elements.listPanel.hidden = true;
   elements.calculatorScreen.hidden = false;
   elements.addItemScreen.hidden = true;
   elements.aboutScreen.hidden = true;
-  setFinderSearchVisible(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function showFinder() {
+  setActiveView("finder");
   elements.calculatorScreen.hidden = true;
   elements.addItemScreen.hidden = true;
   elements.aboutScreen.hidden = true;
   elements.listPanel.hidden = false;
-  setFinderSearchVisible(true);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function showAddItem() {
+  setActiveView("add-item");
   elements.listPanel.hidden = true;
   elements.calculatorScreen.hidden = true;
   elements.addItemScreen.hidden = false;
   elements.aboutScreen.hidden = true;
-  setFinderSearchVisible(false);
   if (calculatorState.editingItemRef === null) {
     resetCustomItemForm();
   }
@@ -1359,11 +1370,11 @@ function showAddItem() {
 }
 
 function showAbout() {
+  setActiveView("about");
   elements.listPanel.hidden = true;
   elements.calculatorScreen.hidden = true;
   elements.addItemScreen.hidden = true;
   elements.aboutScreen.hidden = false;
-  setFinderSearchVisible(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -2525,7 +2536,7 @@ loadPersistedState();
 renderBranchOptions();
 renderResults();
 renderCalculator();
-setFinderSearchVisible(true);
+setActiveView("finder");
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
