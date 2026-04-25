@@ -125,6 +125,7 @@ const STORAGE_KEYS = {
 };
 
 const elements = {
+  finderSearchBlock: document.querySelector("#finderSearchBlock"),
   searchInput: document.querySelector("#searchInput"),
   resultsList: document.querySelector("#resultsList"),
   resultsMeta: document.querySelector("#resultsMeta"),
@@ -222,6 +223,13 @@ const elements = {
   customSaveFeedback: document.querySelector("#customSaveFeedback"),
   customItemsList: document.querySelector("#customItemsList"),
 };
+
+function setFinderSearchVisible(isVisible) {
+  if (!elements.finderSearchBlock) {
+    return;
+  }
+  elements.finderSearchBlock.hidden = !isVisible;
+}
 
 const calculatorState = {
   sidesRaw: "",
@@ -494,6 +502,25 @@ function getSearchMatchRank(item, query) {
     return 5;
   }
   return 6;
+}
+
+function getNozSearchTier(item, query) {
+  const normalizedQuery = String(query || "").trim().toUpperCase();
+  if (!normalizedQuery.startsWith("NOZ")) {
+    return null;
+  }
+
+  const sapCode = String(item?.sapCode || "").trim().toUpperCase();
+  if (sapCode.startsWith("NOZ")) {
+    return 1;
+  }
+  if (sapCode.startsWith("HRN")) {
+    return 3;
+  }
+  if (isSupplierMappedCodeItem(item)) {
+    return 4;
+  }
+  return 2;
 }
 
 function confirmDeleteAction(targetLabel) {
@@ -841,9 +868,14 @@ function buildGroupedVariantItems(importedItems) {
     const colourName = detectColourName(item);
     const colourCode = COLOUR_NAME_TO_CODE[colourName] || "";
     const sapCode = String(item.sapCode || "").trim();
-    const codePattern = colourCode && sapCode.endsWith(colourCode)
+    const isFasciaCover = /FASCIA\s+COVER/i.test(String(item.itemName || ""));
+    let codePattern = colourCode && sapCode.endsWith(colourCode)
       ? `${sapCode.slice(0, -3)}***`
       : "";
+
+    if (isFasciaCover && /FCC/i.test(sapCode)) {
+      codePattern = "FCC***";
+    }
 
     if (!colourName || !codePattern) {
       passthroughItems.push(item);
@@ -956,6 +988,15 @@ function getFilteredItems() {
       const preferredDelta = Number(Boolean(right.preferred)) - Number(Boolean(left.preferred));
       if (preferredDelta !== 0) {
         return preferredDelta;
+      }
+
+      const leftNozTier = getNozSearchTier(left, rawQuery);
+      const rightNozTier = getNozSearchTier(right, rawQuery);
+      if (leftNozTier !== null && rightNozTier !== null) {
+        const nozTierDelta = leftNozTier - rightNozTier;
+        if (nozTierDelta !== 0) {
+          return nozTierDelta;
+        }
       }
 
       const supplierMappedDelta = Number(isSupplierMappedCodeItem(left)) - Number(isSupplierMappedCodeItem(right));
@@ -1290,6 +1331,7 @@ function showCalculator() {
   elements.calculatorScreen.hidden = false;
   elements.addItemScreen.hidden = true;
   elements.aboutScreen.hidden = true;
+  setFinderSearchVisible(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1298,6 +1340,7 @@ function showFinder() {
   elements.addItemScreen.hidden = true;
   elements.aboutScreen.hidden = true;
   elements.listPanel.hidden = false;
+  setFinderSearchVisible(true);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1306,6 +1349,7 @@ function showAddItem() {
   elements.calculatorScreen.hidden = true;
   elements.addItemScreen.hidden = false;
   elements.aboutScreen.hidden = true;
+  setFinderSearchVisible(false);
   if (calculatorState.editingItemRef === null) {
     resetCustomItemForm();
   }
@@ -1319,6 +1363,7 @@ function showAbout() {
   elements.calculatorScreen.hidden = true;
   elements.addItemScreen.hidden = true;
   elements.aboutScreen.hidden = false;
+  setFinderSearchVisible(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -2480,6 +2525,7 @@ loadPersistedState();
 renderBranchOptions();
 renderResults();
 renderCalculator();
+setFinderSearchVisible(true);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
