@@ -73,6 +73,12 @@
 
         <div class="calculator-layout">
           <div class="calculator-card">
+            <h3>Order Colours</h3>
+            <div id="orderColoursList" class="field field--stack"></div>
+            <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour</button>
+          </div>
+
+          <div class="calculator-card">
             <h3>Sides (mm)</h3>
             <label class="field">
               <span>Side Values</span>
@@ -116,7 +122,7 @@
           </div>
 
           <div class="calculator-card">
-            <h3>Colour</h3>
+            <h3>Flashing Setup</h3>
             <div class="field-grid">
               <label class="field">
                 <span>Flashing Family</span>
@@ -128,14 +134,10 @@
                   <option value="copper055">Copper 0.55</option>
                 </select>
               </label>
-              <label class="field" id="colourField">
-                <span>Colour Code</span>
-                <select id="colourSelect"></select>
+              <label class="field">
+                <span>Flashing Colour</span>
+                <select id="flashingColourSelect"></select>
               </label>
-            </div>
-            <div class="field field--stack" id="colourSwatchesField">
-              <span>Quick Colour Pick</span>
-              <div id="colourSwatches" class="colour-swatches"></div>
             </div>
             <details class="field field--stack">
               <summary>Colour Legend</summary>
@@ -158,21 +160,6 @@
             <label class="checkbox-row">
               <input id="taperingCheckbox" type="checkbox">
               <span>Tapering (add FTAP charge)</span>
-            </label>
-            <div class="field field--stack">
-              <span>Fulfilment</span>
-              <label class="checkbox-row">
-                <input id="fulfilmentDeliveryInput" name="fulfilmentType" type="radio" value="delivery" checked>
-                <span>Delivery</span>
-              </label>
-              <label class="checkbox-row">
-                <input id="fulfilmentOpuInput" name="fulfilmentType" type="radio" value="opu">
-                <span>OPU</span>
-              </label>
-            </div>
-            <label id="siteTimeRow" class="checkbox-row">
-              <input id="siteTimeCheckbox" type="checkbox">
-              <span>Site Time</span>
             </label>
           </div>
 

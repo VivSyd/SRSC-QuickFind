@@ -186,18 +186,13 @@ const elements = {
   standardFoldsInput: document.querySelector("#standardFoldsInput"),
   crushReturnInput: document.querySelector("#crushReturnInput"),
   familySelect: document.querySelector("#familySelect"),
-  colourField: document.querySelector("#colourField"),
-  colourSelect: document.querySelector("#colourSelect"),
-  colourSwatchesField: document.querySelector("#colourSwatchesField"),
-  colourSwatches: document.querySelector("#colourSwatches"),
+  orderColoursList: document.querySelector("#orderColoursList"),
+  addOrderColourButton: document.querySelector("#addOrderColourButton"),
+  flashingColourSelect: document.querySelector("#flashingColourSelect"),
   colourLegendList: document.querySelector("#colourLegendList"),
   qtyInput: document.querySelector("#qtyInput"),
   lengthInput: document.querySelector("#lengthInput"),
   taperingCheckbox: document.querySelector("#taperingCheckbox"),
-  fulfilmentDeliveryInput: document.querySelector("#fulfilmentDeliveryInput"),
-  fulfilmentOpuInput: document.querySelector("#fulfilmentOpuInput"),
-  siteTimeRow: document.querySelector("#siteTimeRow"),
-  siteTimeCheckbox: document.querySelector("#siteTimeCheckbox"),
   girthLine: document.querySelector("#girthLine"),
   actualGirthLine: document.querySelector("#actualGirthLine"),
   summaryLine: document.querySelector("#summaryLine"),
@@ -253,12 +248,11 @@ const calculatorState = {
   isTapering: false,
   family: "colorbond055",
   colour: "MON",
+  orderColours: ["MON"],
   qty: 1,
   qtyRaw: "1",
   length: 1,
   lengthRaw: "1",
-  fulfilment: "delivery",
-  hasSiteTime: false,
   orders: [],
   currentOrderItems: [],
   salesOrderNo: "",
@@ -365,6 +359,7 @@ function loadPersistedState() {
               summaryLine: String(item?.summaryLine || ""),
               girthLine: String(item?.girthLine || ""),
               actualGirthLine: String(item?.actualGirthLine || ""),
+              colour: String(item?.colour || item?.calculatorInput?.colour || ""),
             }))
           : [],
       }));
@@ -1575,28 +1570,53 @@ function renderDetailSourceControls() {
   );
 }
 
-function renderColourOptions() {
-  elements.colourSelect.innerHTML = COLOUR_PALETTE
-    .map((entry) => `<option value="${entry.code}">${entry.name} (${entry.code})</option>`)
-    .join("");
+function getColourLabel(code) {
+  const swatch = COLOUR_PALETTE.find((entry) => entry.code === code);
+  if (!swatch) {
+    return code;
+  }
+  return `${swatch.name} (${swatch.code})`;
 }
 
-function renderColourSwatches() {
-  elements.colourSwatches.innerHTML = COLOUR_PALETTE
-    .map(
-      (swatch) => `
-        <button
-          class="colour-swatch${calculatorState.colour === swatch.code ? " is-active" : ""}"
-          type="button"
-          data-colour-swatch="${escapeHtml(swatch.code)}"
-          title="${escapeHtml(swatch.name)}"
-        >
-          <span class="colour-swatch__chip" style="background:${escapeHtml(swatch.hex)};"></span>
-          <span class="colour-swatch__label">${escapeHtml(swatch.name)}</span>
-        </button>
-      `
-    )
+function sanitizeOrderColours() {
+  const validUnique = [...new Set((calculatorState.orderColours || []).filter((code) => colourOptions.includes(code)))];
+  const nextColours = validUnique.slice(0, 3);
+  if (nextColours.length === 0) {
+    nextColours.push("MON");
+  }
+  calculatorState.orderColours = nextColours;
+  if (!calculatorState.orderColours.includes(calculatorState.colour)) {
+    calculatorState.colour = calculatorState.orderColours[0];
+  }
+}
+
+function renderColourOptions() {
+  sanitizeOrderColours();
+
+  elements.orderColoursList.innerHTML = calculatorState.orderColours
+    .map((selectedCode, index) => `
+      <div class="field-grid">
+        <label class="field">
+          <span>Colour ${index + 1}</span>
+          <select data-order-colour-index="${index}">
+            ${COLOUR_PALETTE.map((entry) => `<option value="${entry.code}" ${entry.code === selectedCode ? "selected" : ""}>${entry.name} (${entry.code})</option>`).join("")}
+          </select>
+        </label>
+        ${
+          index > 0
+            ? `<button class="danger-button" type="button" data-remove-order-colour="${index}">Delete</button>`
+            : `<span></span>`
+        }
+      </div>
+    `)
     .join("");
+
+  elements.addOrderColourButton.disabled = calculatorState.orderColours.length >= 3;
+
+  elements.flashingColourSelect.innerHTML = calculatorState.orderColours
+    .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
+    .join("");
+  elements.flashingColourSelect.value = calculatorState.colour;
 
   elements.colourLegendList.innerHTML = COLOUR_PALETTE
     .map(
@@ -1713,10 +1733,7 @@ function getCalculatorValues() {
   const mainCode = `${workbookMainCode} ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH`;
   const extraFoldCode = extraFolds > 0 ? `\nF${extraFolds}B ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH` : "";
   const taperCode = calculatorState.isTapering ? `\nFTAP ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH` : "";
-  const deliveryChargeCode = calculatorState.fulfilment === "delivery" ? `\nDelivery Charges` : "";
-  const siteTimeChargeCode =
-    calculatorState.fulfilment === "delivery" && calculatorState.hasSiteTime ? `\nSite Time Charges` : "";
-  const finalOutput = mainCode + extraFoldCode + taperCode + deliveryChargeCode + siteTimeChargeCode;
+  const finalOutput = mainCode + extraFoldCode + taperCode;
   const mainMatch = items.find((item) => item.sapCode === workbookMainCode);
   const extraMatch = extraFolds > 0 ? items.find((item) => item.sapCode === `F${extraFolds}B`) : null;
   const fallbackMatches = items
@@ -1742,7 +1759,7 @@ function getCalculatorValues() {
 
 function renderCalculator() {
   renderSides();
-  renderColourSwatches();
+  renderColourOptions();
   const {
     girthLine,
     actualGirthLine,
@@ -1757,16 +1774,10 @@ function renderCalculator() {
   elements.standardFoldsInput.value = calculatorState.standardFolds;
   elements.crushReturnInput.value = calculatorState.crushReturn;
   elements.familySelect.value = calculatorState.family;
-  elements.colourSelect.value = calculatorState.colour;
-  elements.colourField.hidden = !familyConfig[calculatorState.family].usesColour;
-  elements.colourSwatchesField.hidden = !familyConfig[calculatorState.family].usesColour;
+  elements.flashingColourSelect.value = calculatorState.colour;
   elements.qtyInput.value = calculatorState.qtyRaw;
   elements.lengthInput.value = calculatorState.lengthRaw;
   elements.taperingCheckbox.checked = calculatorState.isTapering;
-  elements.fulfilmentDeliveryInput.checked = calculatorState.fulfilment === "delivery";
-  elements.fulfilmentOpuInput.checked = calculatorState.fulfilment === "opu";
-  elements.siteTimeRow.hidden = calculatorState.fulfilment !== "delivery";
-  elements.siteTimeCheckbox.checked = calculatorState.fulfilment === "delivery" && calculatorState.hasSiteTime;
   elements.salesOrderInput.value = calculatorState.salesOrderNo;
   if (elements.warehouseInput) {
     elements.warehouseInput.value = calculatorState.warehouse;
@@ -1837,22 +1848,37 @@ function renderCurrentOrder() {
     return;
   }
 
-  elements.currentOrderList.innerHTML = calculatorState.currentOrderItems
-    .map(
-      (item, index) => `
-        <div class="order-item">
-          <div class="order-item__type">${escapeHtml(item.type)}</div>
-          <div>${escapeHtml(item.girthLine)}</div>
-          <div>${escapeHtml(item.actualGirthLine || (item.actualGirth ? `Actual Girth (before rounding): ${item.actualGirth} mm` : ""))}</div>
-          <div>${escapeHtml(item.summaryLine)}</div>
-          <div class="order-item__output">${escapeHtml(item.finalOutput)}</div>
-          <div class="item-actions">
-            <button class="ghost-button" type="button" data-edit-order-item="${index}">Edit</button>
-            <button class="danger-button" type="button" data-delete-order-item="${index}">Delete</button>
-          </div>
-        </div>
-      `
-    )
+  const grouped = calculatorState.currentOrderItems.reduce((accumulator, item, index) => {
+    const colourCode = item?.calculatorInput?.colour || "N/A";
+    if (!accumulator[colourCode]) {
+      accumulator[colourCode] = [];
+    }
+    accumulator[colourCode].push({ ...item, orderIndex: index });
+    return accumulator;
+  }, {});
+
+  elements.currentOrderList.innerHTML = Object.entries(grouped)
+    .map(([colourCode, groupedItems]) => `
+      <div class="order-item">
+        <div class="order-item__type">Colour Group: ${escapeHtml(getColourLabel(colourCode))}</div>
+        ${groupedItems
+          .map(
+            (item) => `
+              <div class="order-item">
+                <div>${escapeHtml(item.girthLine)}</div>
+                <div>${escapeHtml(item.actualGirthLine || (item.actualGirth ? `Actual Girth (before rounding): ${item.actualGirth} mm` : ""))}</div>
+                <div>${escapeHtml(item.summaryLine)}</div>
+                <div class="order-item__output">${escapeHtml(item.finalOutput)}</div>
+                <div class="item-actions">
+                  <button class="ghost-button" type="button" data-edit-order-item="${item.orderIndex}">Edit</button>
+                  <button class="danger-button" type="button" data-delete-order-item="${item.orderIndex}">Delete</button>
+                </div>
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+    `)
     .join("");
 }
 
@@ -1913,12 +1939,30 @@ function renderOrdersToday() {
               ? `<div class="order-day-card__details">
                 ${
                   Array.isArray(order.items) && order.items.length > 0
-                    ? order.items
+                    ? Object.entries(
+                        order.items.reduce((accumulator, item) => {
+                          const colourCode = item?.colour || "N/A";
+                          if (!accumulator[colourCode]) {
+                            accumulator[colourCode] = [];
+                          }
+                          accumulator[colourCode].push(item);
+                          return accumulator;
+                        }, {})
+                      )
                         .map(
-                          (item, itemIndex) => `
+                          ([colourCode, colourItems]) => `
                             <div class="order-item">
-                              <div class="order-item__type">Flashing ${itemIndex + 1}</div>
-                              <div class="order-day-card__output">${escapeHtml(getOrderItemDisplayText(item) || "No code output saved.")}</div>
+                              <div class="order-item__type">Colour Group: ${escapeHtml(getColourLabel(colourCode))}</div>
+                              ${colourItems
+                                .map(
+                                  (item, itemIndex) => `
+                                    <div class="order-item">
+                                      <div class="order-item__type">Flashing ${itemIndex + 1}</div>
+                                      <div class="order-day-card__output">${escapeHtml(getOrderItemDisplayText(item) || "No code output saved.")}</div>
+                                    </div>
+                                  `
+                                )
+                                .join("")}
                             </div>
                           `
                         )
@@ -1970,19 +2014,21 @@ function renderCustomItems() {
     .join("");
 }
 
-function resetFlashingForm() {
+function resetFlashingForm(resetOrderColours = false) {
   calculatorState.sidesRaw = "";
   calculatorState.standardFolds = 0;
   calculatorState.crushReturn = 0;
   calculatorState.isTapering = false;
   calculatorState.family = "colorbond055";
-  calculatorState.colour = "MON";
+  if (resetOrderColours) {
+    calculatorState.orderColours = ["MON"];
+  }
+  sanitizeOrderColours();
+  calculatorState.colour = calculatorState.orderColours[0];
   calculatorState.qty = 1;
   calculatorState.qtyRaw = "1";
   calculatorState.length = 1;
   calculatorState.lengthRaw = "1";
-  calculatorState.fulfilment = "delivery";
-  calculatorState.hasSiteTime = false;
   calculatorState.editingCurrentOrderIndex = null;
 }
 
@@ -2000,14 +2046,16 @@ function loadFlashingIntoForm(orderItem, index) {
   calculatorState.crushReturn = Number(orderItem.calculatorInput.crushReturn || legacyCrushCount || 0);
   calculatorState.isTapering = Boolean(orderItem.calculatorInput.isTapering);
   calculatorState.family = orderItem.calculatorInput.family || "colorbond055";
-  calculatorState.colour = orderItem.calculatorInput.colour || "MON";
+  const itemColour = orderItem.calculatorInput.colour || "MON";
+  if (!calculatorState.orderColours.includes(itemColour) && calculatorState.orderColours.length < 3) {
+    calculatorState.orderColours = [...calculatorState.orderColours, itemColour];
+  }
+  sanitizeOrderColours();
+  calculatorState.colour = calculatorState.orderColours.includes(itemColour) ? itemColour : calculatorState.orderColours[0];
   calculatorState.qty = Number(orderItem.calculatorInput.qty || 1);
   calculatorState.qtyRaw = String(orderItem.calculatorInput.qty || 1);
   calculatorState.length = Number(orderItem.calculatorInput.length || 1);
   calculatorState.lengthRaw = String(orderItem.calculatorInput.length || 1);
-  calculatorState.fulfilment = orderItem.calculatorInput.fulfilment === "opu" ? "opu" : "delivery";
-  calculatorState.hasSiteTime =
-    calculatorState.fulfilment === "delivery" && Boolean(orderItem.calculatorInput.hasSiteTime);
   calculatorState.editingCurrentOrderIndex = index;
   elements.copyAllFeedback.textContent = "Editing current order item.";
   renderCalculator();
@@ -2130,8 +2178,6 @@ function addToOrder() {
       colour: calculatorState.colour,
       qty: calculatorState.qty,
       length: calculatorState.length,
-      fulfilment: calculatorState.fulfilment,
-      hasSiteTime: calculatorState.hasSiteTime,
     },
   };
 
@@ -2175,6 +2221,7 @@ function finalizeOrder() {
       summaryLine: String(item?.summaryLine || ""),
       girthLine: String(item?.girthLine || ""),
       actualGirthLine: String(item?.actualGirthLine || ""),
+      colour: String(item?.calculatorInput?.colour || ""),
     })),
   };
 
