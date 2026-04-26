@@ -140,6 +140,7 @@ const elements = {
   sideLogoAboutButton: document.querySelector("#sideLogoAboutButton"),
   sideHomeButton: document.querySelector("#sideHomeButton"),
   sideFilterButton: document.querySelector("#sideFilterButton"),
+  sideAboutButton: document.querySelector("#sideAboutButton"),
   filterSheet: document.querySelector("#filterSheet"),
   branchOptions: document.querySelector("#branchOptions"),
   detailScreen: document.querySelector("#detailScreen"),
@@ -1626,7 +1627,8 @@ function sanitizeOrderColours() {
 function renderColourOptions() {
   sanitizeOrderColours();
 
-  elements.orderColoursList.innerHTML = calculatorState.orderColours
+  if (elements.orderColoursList) {
+    elements.orderColoursList.innerHTML = calculatorState.orderColours
     .map((selectedCode, index) => `
       <button
         class="source-pill${calculatorState.colour === selectedCode ? " is-active" : ""}"
@@ -1643,18 +1645,25 @@ function renderColourOptions() {
       }
     `)
     .join("");
+  }
 
-  elements.addOrderColourButton.disabled = calculatorState.orderColours.length >= 3;
+  if (elements.addOrderColourButton) {
+    elements.addOrderColourButton.disabled = calculatorState.orderColours.length >= 3;
+  }
 
-  elements.entryColourSelect.innerHTML = calculatorState.orderColours
-    .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
-    .join("");
-  elements.entryColourSelect.value = calculatorState.colour;
+  if (elements.entryColourSelect) {
+    elements.entryColourSelect.innerHTML = calculatorState.orderColours
+      .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
+      .join("");
+    elements.entryColourSelect.value = calculatorState.colour;
+  }
 
-  elements.colourValueSelect.innerHTML = COLOUR_PALETTE
-    .map((entry) => `<option value="${entry.code}">${entry.name} (${entry.code})</option>`)
-    .join("");
-  elements.colourValueSelect.value = calculatorState.pendingOrderColour || calculatorState.colour;
+  if (elements.colourValueSelect) {
+    elements.colourValueSelect.innerHTML = COLOUR_PALETTE
+      .map((entry) => `<option value="${entry.code}">${entry.name} (${entry.code})</option>`)
+      .join("");
+    elements.colourValueSelect.value = calculatorState.pendingOrderColour || calculatorState.colour;
+  }
 }
 
 function renderSides() {
@@ -2489,17 +2498,19 @@ elements.searchInput.addEventListener("input", (event) => {
 });
 
 elements.filterButton?.addEventListener("click", openSheet);
-elements.sideHomeButton.addEventListener("click", () => {
+elements.sideHomeButton?.addEventListener("click", () => {
   closeDetail();
   closeSheet();
   showFinder();
 });
-elements.sideFilterButton.addEventListener("click", openSheet);
-elements.sideLogoAboutButton.addEventListener("click", () => {
+elements.sideFilterButton?.addEventListener("click", openSheet);
+const openAboutFromRail = () => {
   closeDetail();
   closeSheet();
   showAbout();
-});
+};
+elements.sideLogoAboutButton?.addEventListener("click", openAboutFromRail);
+elements.sideAboutButton?.addEventListener("click", openAboutFromRail);
 elements.clearFiltersButton.addEventListener("click", clearFilters);
 elements.backButton.addEventListener("click", closeDetail);
 elements.copySapButton.addEventListener("click", copySapCode);
@@ -2739,12 +2750,12 @@ elements.familySelect.addEventListener("change", (event) => {
   renderCalculator();
 });
 
-elements.entryColourSelect.addEventListener("change", (event) => {
+elements.entryColourSelect?.addEventListener("change", (event) => {
   calculatorState.colour = event.target.value || calculatorState.orderColours[0] || "MON";
   renderCalculator();
 });
 
-elements.orderColoursList.addEventListener("click", (event) => {
+elements.orderColoursList?.addEventListener("click", (event) => {
   const selectButton = event.target.closest("[data-select-order-colour]");
   if (selectButton) {
     const colourCode = selectButton.getAttribute("data-select-order-colour");
@@ -2772,11 +2783,11 @@ elements.orderColoursList.addEventListener("click", (event) => {
   renderCalculator();
 });
 
-elements.colourValueSelect.addEventListener("change", (event) => {
+elements.colourValueSelect?.addEventListener("change", (event) => {
   calculatorState.pendingOrderColour = event.target.value || calculatorState.orderColours[0] || "MON";
 });
 
-elements.addOrderColourButton.addEventListener("click", () => {
+elements.addOrderColourButton?.addEventListener("click", () => {
   const colourCode = calculatorState.pendingOrderColour || calculatorState.orderColours[0] || "MON";
   if (calculatorState.orderColours.includes(colourCode)) {
     calculatorState.colour = colourCode;
