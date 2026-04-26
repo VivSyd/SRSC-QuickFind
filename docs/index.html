@@ -73,6 +73,36 @@
 
         <div class="calculator-layout">
           <div class="calculator-card">
+            <h3>Order Colours</h3>
+            <div id="orderColoursList" class="field field--stack"></div>
+            <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour</button>
+            <label class="field">
+              <span>Flashing Entry Colour</span>
+              <select id="entryColourSelect"></select>
+            </label>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Flashing Setup</h3>
+            <div class="field-grid">
+              <label class="field">
+                <span>Flashing Family</span>
+                <select id="familySelect">
+                  <option value="colorbond055">Colorbond 0.55</option>
+                  <option value="matt055">Matt 0.55</option>
+                  <option value="colorbond07">Colorbond 0.7</option>
+                  <option value="colorbond10">Colorbond 1.0</option>
+                  <option value="copper055">Copper 0.55</option>
+                </select>
+              </label>
+            </div>
+            <details class="field field--stack">
+              <summary>Colour Legend</summary>
+              <div id="colourLegendList" class="colour-legend-list"></div>
+            </details>
+          </div>
+
+          <div class="calculator-card">
             <h3>Sides (mm)</h3>
             <label class="field">
               <span>Side Values</span>
@@ -116,34 +146,6 @@
           </div>
 
           <div class="calculator-card">
-            <h3>Colour</h3>
-            <div class="field-grid">
-              <label class="field">
-                <span>Flashing Family</span>
-                <select id="familySelect">
-                  <option value="colorbond055">Colorbond 0.55</option>
-                  <option value="matt055">Matt 0.55</option>
-                  <option value="colorbond07">Colorbond 0.7</option>
-                  <option value="colorbond10">Colorbond 1.0</option>
-                  <option value="copper055">Copper 0.55</option>
-                </select>
-              </label>
-              <label class="field" id="colourField">
-                <span>Colour Code</span>
-                <select id="colourSelect"></select>
-              </label>
-            </div>
-            <div class="field field--stack" id="colourSwatchesField">
-              <span>Quick Colour Pick</span>
-              <div id="colourSwatches" class="colour-swatches"></div>
-            </div>
-            <details class="field field--stack">
-              <summary>Colour Legend</summary>
-              <div id="colourLegendList" class="colour-legend-list"></div>
-            </details>
-          </div>
-
-          <div class="calculator-card">
             <h3>Qty & Length</h3>
             <div class="field-grid">
               <label class="field">
@@ -158,21 +160,6 @@
             <label class="checkbox-row">
               <input id="taperingCheckbox" type="checkbox">
               <span>Tapering (add FTAP charge)</span>
-            </label>
-            <div class="field field--stack">
-              <span>Fulfilment</span>
-              <label class="checkbox-row">
-                <input id="fulfilmentDeliveryInput" name="fulfilmentType" type="radio" value="delivery" checked>
-                <span>Delivery</span>
-              </label>
-              <label class="checkbox-row">
-                <input id="fulfilmentOpuInput" name="fulfilmentType" type="radio" value="opu">
-                <span>OPU</span>
-              </label>
-            </div>
-            <label id="siteTimeRow" class="checkbox-row">
-              <input id="siteTimeCheckbox" type="checkbox">
-              <span>Site Time</span>
             </label>
           </div>
 

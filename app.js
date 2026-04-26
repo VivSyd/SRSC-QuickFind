@@ -188,7 +188,7 @@ const elements = {
   familySelect: document.querySelector("#familySelect"),
   orderColoursList: document.querySelector("#orderColoursList"),
   addOrderColourButton: document.querySelector("#addOrderColourButton"),
-  flashingColourSelect: document.querySelector("#flashingColourSelect"),
+  entryColourSelect: document.querySelector("#entryColourSelect"),
   colourLegendList: document.querySelector("#colourLegendList"),
   qtyInput: document.querySelector("#qtyInput"),
   lengthInput: document.querySelector("#lengthInput"),
@@ -1613,10 +1613,10 @@ function renderColourOptions() {
 
   elements.addOrderColourButton.disabled = calculatorState.orderColours.length >= 3;
 
-  elements.flashingColourSelect.innerHTML = calculatorState.orderColours
+  elements.entryColourSelect.innerHTML = calculatorState.orderColours
     .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
     .join("");
-  elements.flashingColourSelect.value = calculatorState.colour;
+  elements.entryColourSelect.value = calculatorState.colour;
 
   elements.colourLegendList.innerHTML = COLOUR_PALETTE
     .map(
@@ -1724,7 +1724,7 @@ function getCalculatorValues() {
   const colourSummary = family.usesColour ? calculatorState.colour : "COPPER";
   const girthLine = `${sidesString}${crushString ? ` + ${crushString}` : ""} = ${formatCalculatorNumber(actualGirth)} -> ${roundedGirth}${sidesEvaluation.isValid ? "" : " (invalid side expression)"}`;
   const actualGirthLine = `Actual Girth (before rounding): ${formatCalculatorNumber(actualGirth)} mm`;
-  const summaryLine = `F:${totalFolds}${totalFolds > 6 ? ` (${mainFolds}+${extraFolds})` : ""} | ${family.label} | ${colourSummary}${calculatorState.isTapering ? " | TAPER" : ""} | Q:${calculatorState.qty} | L:${calculatorState.length}m`;
+  const summaryLine = `F:${totalFolds}${totalFolds > 6 ? ` (${mainFolds}+${extraFolds})` : ""} | ${family.label} | [${colourSummary}]${calculatorState.isTapering ? " | TAPER" : ""} | Q:${calculatorState.qty} | L:${calculatorState.length}m`;
   const workbookMainCode = family.buildCode({
     girth: roundedGirth,
     folds: mainFolds,
@@ -1774,7 +1774,7 @@ function renderCalculator() {
   elements.standardFoldsInput.value = calculatorState.standardFolds;
   elements.crushReturnInput.value = calculatorState.crushReturn;
   elements.familySelect.value = calculatorState.family;
-  elements.flashingColourSelect.value = calculatorState.colour;
+  elements.entryColourSelect.value = calculatorState.colour;
   elements.qtyInput.value = calculatorState.qtyRaw;
   elements.lengthInput.value = calculatorState.lengthRaw;
   elements.taperingCheckbox.checked = calculatorState.isTapering;
@@ -2232,6 +2232,7 @@ function finalizeOrder() {
   calculatorState.currentOrderItems = [];
   calculatorState.salesOrderNo = "";
   calculatorState.warehouse = "";
+  resetFlashingForm(true);
   calculatorState.orderCounter += 1;
   persistOrders();
   persistCurrentOrder();
@@ -2322,9 +2323,22 @@ async function copySingleOrder(orderId) {
     return;
   }
 
-  const text = order.items
-    .map((item) => `${item.girthLine}\n${item.summaryLine}\n${item.finalOutput}`)
-    .join("\n\n");
+  const groupedLines = Object.entries(
+    (order.items || []).reduce((accumulator, item) => {
+      const colourCode = item?.colour || "N/A";
+      if (!accumulator[colourCode]) {
+        accumulator[colourCode] = [];
+      }
+      accumulator[colourCode].push(item);
+      return accumulator;
+    }, {})
+  ).map(([colourCode, colourItems]) => {
+    const lines = colourItems
+      .map((item) => `${item.girthLine}\n${item.summaryLine}\n${item.finalOutput}`)
+      .join("\n\n");
+    return `COLOUR: ${getColourLabel(colourCode)}\n${lines}`;
+  });
+  const text = groupedLines.join("\n\n");
 
   try {
     await navigator.clipboard.writeText(`Order #${order.orderId}\nSO: ${order.salesOrderNo || ""}\nWarehouse: ${order.warehouse || ""}\n\n${text}`);
@@ -2646,18 +2660,51 @@ elements.familySelect.addEventListener("change", (event) => {
   renderCalculator();
 });
 
-elements.colourSelect.addEventListener("change", (event) => {
-  calculatorState.colour = event.target.value;
+elements.entryColourSelect.addEventListener("change", (event) => {
+  calculatorState.colour = event.target.value || calculatorState.orderColours[0] || "MON";
   renderCalculator();
 });
 
-elements.colourSwatches.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-colour-swatch]");
+elements.orderColoursList.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-order-colour-index]");
+  if (!select) {
+    return;
+  }
+
+  const index = Number(select.getAttribute("data-order-colour-index"));
+  if (!Number.isInteger(index) || index < 0 || index >= calculatorState.orderColours.length) {
+    return;
+  }
+  calculatorState.orderColours[index] = select.value;
+  sanitizeOrderColours();
+  renderCalculator();
+});
+
+elements.orderColoursList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-order-colour]");
   if (!button) {
     return;
   }
 
-  calculatorState.colour = button.getAttribute("data-colour-swatch") || "MON";
+  const index = Number(button.getAttribute("data-remove-order-colour"));
+  if (!Number.isInteger(index) || index <= 0 || index >= calculatorState.orderColours.length) {
+    return;
+  }
+  calculatorState.orderColours = calculatorState.orderColours.filter((_, colourIndex) => colourIndex !== index);
+  sanitizeOrderColours();
+  renderCalculator();
+});
+
+elements.addOrderColourButton.addEventListener("click", () => {
+  if (calculatorState.orderColours.length >= 3) {
+    return;
+  }
+  const firstUnused = COLOUR_PALETTE.find((entry) => !calculatorState.orderColours.includes(entry.code));
+  calculatorState.orderColours = [
+    ...calculatorState.orderColours,
+    (firstUnused && firstUnused.code) || calculatorState.orderColours[0] || "MON",
+  ];
+  sanitizeOrderColours();
   renderCalculator();
 });
 
@@ -2677,28 +2724,6 @@ elements.lengthInput.addEventListener("input", (event) => {
 
 elements.taperingCheckbox.addEventListener("change", (event) => {
   calculatorState.isTapering = event.target.checked;
-  renderCalculator();
-});
-
-elements.fulfilmentDeliveryInput.addEventListener("change", (event) => {
-  if (!event.target.checked) {
-    return;
-  }
-  calculatorState.fulfilment = "delivery";
-  renderCalculator();
-});
-
-elements.fulfilmentOpuInput.addEventListener("change", (event) => {
-  if (!event.target.checked) {
-    return;
-  }
-  calculatorState.fulfilment = "opu";
-  calculatorState.hasSiteTime = false;
-  renderCalculator();
-});
-
-elements.siteTimeCheckbox.addEventListener("change", (event) => {
-  calculatorState.hasSiteTime = event.target.checked;
   renderCalculator();
 });
 

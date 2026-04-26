@@ -76,6 +76,30 @@
             <h3>Order Colours</h3>
             <div id="orderColoursList" class="field field--stack"></div>
             <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour</button>
+            <label class="field">
+              <span>Flashing Entry Colour</span>
+              <select id="entryColourSelect"></select>
+            </label>
+          </div>
+
+          <div class="calculator-card">
+            <h3>Flashing Setup</h3>
+            <div class="field-grid">
+              <label class="field">
+                <span>Flashing Family</span>
+                <select id="familySelect">
+                  <option value="colorbond055">Colorbond 0.55</option>
+                  <option value="matt055">Matt 0.55</option>
+                  <option value="colorbond07">Colorbond 0.7</option>
+                  <option value="colorbond10">Colorbond 1.0</option>
+                  <option value="copper055">Copper 0.55</option>
+                </select>
+              </label>
+            </div>
+            <details class="field field--stack">
+              <summary>Colour Legend</summary>
+              <div id="colourLegendList" class="colour-legend-list"></div>
+            </details>
           </div>
 
           <div class="calculator-card">
@@ -119,30 +143,6 @@
                 <input id="crushReturnInput" type="number" min="0" value="0">
               </label>
             </div>
-          </div>
-
-          <div class="calculator-card">
-            <h3>Flashing Setup</h3>
-            <div class="field-grid">
-              <label class="field">
-                <span>Flashing Family</span>
-                <select id="familySelect">
-                  <option value="colorbond055">Colorbond 0.55</option>
-                  <option value="matt055">Matt 0.55</option>
-                  <option value="colorbond07">Colorbond 0.7</option>
-                  <option value="colorbond10">Colorbond 1.0</option>
-                  <option value="copper055">Copper 0.55</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Flashing Colour</span>
-                <select id="flashingColourSelect"></select>
-              </label>
-            </div>
-            <details class="field field--stack">
-              <summary>Colour Legend</summary>
-              <div id="colourLegendList" class="colour-legend-list"></div>
-            </details>
           </div>
 
           <div class="calculator-card">
