@@ -1678,7 +1678,6 @@ function appendSidesPadKey(key) {
   if (key === "equals") {
     const evaluated = evaluateSidesExpression(compactCurrent);
     if (evaluated.isValid) {
-      calculatorState.sidesRaw = formatCalculatorNumber(evaluated.value);
       const { actualGirth } = getCalculatorValues();
       calculatorState.equalsGirth = formatCalculatorNumber(actualGirth);
       renderCalculator();
