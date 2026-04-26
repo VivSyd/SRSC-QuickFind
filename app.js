@@ -190,6 +190,7 @@ const elements = {
   addOrderColourButton: document.querySelector("#addOrderColourButton"),
   entryColourSelect: document.querySelector("#entryColourSelect"),
   colourLegendList: document.querySelector("#colourLegendList"),
+  colourFamilyPicker: document.querySelector("#colourFamilyPicker"),
   qtyInput: document.querySelector("#qtyInput"),
   lengthInput: document.querySelector("#lengthInput"),
   taperingCheckbox: document.querySelector("#taperingCheckbox"),
@@ -1628,6 +1629,22 @@ function renderColourOptions() {
       `
     )
     .join("");
+
+  elements.colourFamilyPicker.innerHTML = COLOUR_PALETTE
+    .map(
+      (swatch) => `
+        <button
+          class="colour-swatch${calculatorState.orderColours.includes(swatch.code) ? " is-active" : ""}"
+          type="button"
+          data-family-colour="${escapeHtml(swatch.code)}"
+          title="${escapeHtml(swatch.name)}"
+        >
+          <span class="colour-swatch__chip" style="background:${escapeHtml(swatch.hex)};"></span>
+          <span class="colour-swatch__label">${escapeHtml(swatch.name)}</span>
+        </button>
+      `
+    )
+    .join("");
 }
 
 function renderSides() {
@@ -2691,6 +2708,34 @@ elements.orderColoursList.addEventListener("click", (event) => {
     return;
   }
   calculatorState.orderColours = calculatorState.orderColours.filter((_, colourIndex) => colourIndex !== index);
+  sanitizeOrderColours();
+  renderCalculator();
+});
+
+elements.colourFamilyPicker.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-family-colour]");
+  if (!button) {
+    return;
+  }
+
+  const colourCode = button.getAttribute("data-family-colour");
+  if (!colourCode) {
+    return;
+  }
+
+  if (calculatorState.orderColours.includes(colourCode)) {
+    calculatorState.colour = colourCode;
+    renderCalculator();
+    return;
+  }
+
+  if (calculatorState.orderColours.length >= 3) {
+    elements.copyAllFeedback.textContent = "Maximum 3 order colours. Remove one to add another.";
+    return;
+  }
+
+  calculatorState.orderColours = [...calculatorState.orderColours, colourCode];
+  calculatorState.colour = colourCode;
   sanitizeOrderColours();
   renderCalculator();
 });
