@@ -229,10 +229,6 @@ const elements = {
 
 function renderSumOnlySidesPad() {
   elements.sidesPad.innerHTML = `
-    <div class="calculator-pad__operator-row">
-      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="+">+</button>
-      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="equals">=</button>
-    </div>
     <div class="calculator-pad__action-row">
       <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="clear">C</button>
       <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="backspace">&#9003;</button>
@@ -249,6 +245,10 @@ function renderSumOnlySidesPad() {
       <button type="button" class="calculator-pad__btn" data-pad-key="3">3</button>
       <button type="button" class="calculator-pad__btn calculator-pad__btn--zero" data-pad-key="0">0</button>
       <button type="button" class="calculator-pad__btn" data-pad-key=".">.</button>
+    </div>
+    <div class="calculator-pad__operator-row">
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="+">+</button>
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="equals">=</button>
     </div>
   `;
 }

@@ -137,9 +137,9 @@ const elements = {
   activeFilters: document.querySelector("#activeFilters"),
   clearFiltersButton: document.querySelector("#clearFiltersButton"),
   filterButton: document.querySelector("#filterButton"),
+  sideLogoAboutButton: document.querySelector("#sideLogoAboutButton"),
   sideHomeButton: document.querySelector("#sideHomeButton"),
   sideFilterButton: document.querySelector("#sideFilterButton"),
-  sideAboutButton: document.querySelector("#sideAboutButton"),
   filterSheet: document.querySelector("#filterSheet"),
   branchOptions: document.querySelector("#branchOptions"),
   detailScreen: document.querySelector("#detailScreen"),
@@ -229,10 +229,6 @@ const elements = {
 
 function renderSumOnlySidesPad() {
   elements.sidesPad.innerHTML = `
-    <div class="calculator-pad__operator-row">
-      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="+">+</button>
-      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="equals">=</button>
-    </div>
     <div class="calculator-pad__action-row">
       <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="clear">C</button>
       <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="backspace">&#9003;</button>
@@ -249,6 +245,10 @@ function renderSumOnlySidesPad() {
       <button type="button" class="calculator-pad__btn" data-pad-key="3">3</button>
       <button type="button" class="calculator-pad__btn calculator-pad__btn--zero" data-pad-key="0">0</button>
       <button type="button" class="calculator-pad__btn" data-pad-key=".">.</button>
+    </div>
+    <div class="calculator-pad__operator-row">
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="+">+</button>
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="equals">=</button>
     </div>
   `;
 }
@@ -2495,7 +2495,7 @@ elements.sideHomeButton.addEventListener("click", () => {
   showFinder();
 });
 elements.sideFilterButton.addEventListener("click", openSheet);
-elements.sideAboutButton.addEventListener("click", () => {
+elements.sideLogoAboutButton.addEventListener("click", () => {
   closeDetail();
   closeSheet();
   showAbout();
