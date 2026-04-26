@@ -85,21 +85,17 @@
                   <option value="copper055">Copper 0.55</option>
                 </select>
               </label>
+              <label class="field">
+                <span>Entry Colour</span>
+                <select id="entryColourSelect"></select>
+              </label>
             </div>
             <div class="field field--stack">
               <span>Colour Type</span>
               <div id="colourFamilyPicker" class="colour-swatches"></div>
             </div>
-            <div class="field field--stack">
-              <span>Colour Legend</span>
-              <div id="colourLegendList" class="colour-legend-list"></div>
-            </div>
             <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour to Order</button>
-            <div id="orderColoursList" class="field field--stack"></div>
-            <label class="field">
-              <span>Flashing Entry Colour</span>
-              <select id="entryColourSelect"></select>
-            </label>
+            <div id="orderColoursList" class="order-colour-chips" aria-label="Selected order colours"></div>
           </div>
 
           <div class="calculator-card">
@@ -128,6 +124,7 @@
               <button type="button" class="calculator-pad__btn calculator-pad__btn--zero" data-pad-key="0">0</button>
               <button type="button" class="calculator-pad__btn" data-pad-key=".">.</button>
               <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="+">+</button>
+              <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="equals">=</button>
             </div>
           </div>
 

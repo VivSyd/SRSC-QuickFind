@@ -1596,19 +1596,19 @@ function renderColourOptions() {
 
   elements.orderColoursList.innerHTML = calculatorState.orderColours
     .map((selectedCode, index) => `
-      <div class="field-grid">
-        <label class="field">
-          <span>Colour ${index + 1}</span>
-          <select data-order-colour-index="${index}">
-            ${COLOUR_PALETTE.map((entry) => `<option value="${entry.code}" ${entry.code === selectedCode ? "selected" : ""}>${entry.name} (${entry.code})</option>`).join("")}
-          </select>
-        </label>
-        ${
-          index > 0
-            ? `<button class="danger-button" type="button" data-remove-order-colour="${index}">Delete</button>`
-            : `<span></span>`
-        }
-      </div>
+      <button
+        class="source-pill${calculatorState.colour === selectedCode ? " is-active" : ""}"
+        type="button"
+        data-select-order-colour="${escapeHtml(selectedCode)}"
+        title="Set entry colour to ${escapeHtml(getColourLabel(selectedCode))}"
+      >
+        ${escapeHtml(getColourLabel(selectedCode))}
+      </button>
+      ${
+        index > 0
+          ? `<button class="supplier-delete-button" type="button" data-remove-order-colour="${index}" title="Remove ${escapeHtml(getColourLabel(selectedCode))}">x</button>`
+          : ""
+      }
     `)
     .join("");
 
@@ -1619,22 +1619,24 @@ function renderColourOptions() {
     .join("");
   elements.entryColourSelect.value = calculatorState.colour;
 
-  elements.colourLegendList.innerHTML = COLOUR_PALETTE
-    .map(
-      (entry) => `
-        <div class="supplier-label-row">
-          <span class="colour-swatch__chip" style="background:${escapeHtml(entry.hex)};"></span>
-          <span>${escapeHtml(entry.name)} (${escapeHtml(entry.code)})</span>
-        </div>
-      `
-    )
-    .join("");
+  if (elements.colourLegendList) {
+    elements.colourLegendList.innerHTML = COLOUR_PALETTE
+      .map(
+        (entry) => `
+          <div class="supplier-label-row">
+            <span class="colour-swatch__chip" style="background:${escapeHtml(entry.hex)};"></span>
+            <span>${escapeHtml(entry.name)} (${escapeHtml(entry.code)})</span>
+          </div>
+        `
+      )
+      .join("");
+  }
 
   elements.colourFamilyPicker.innerHTML = COLOUR_PALETTE
     .map(
       (swatch) => `
         <button
-          class="colour-swatch${calculatorState.orderColours.includes(swatch.code) ? " is-active" : ""}"
+          class="colour-swatch${calculatorState.orderColours.includes(swatch.code) ? " is-active" : ""}${calculatorState.colour === swatch.code ? " is-current" : ""}"
           type="button"
           data-family-colour="${escapeHtml(swatch.code)}"
           title="${escapeHtml(swatch.name)}"
@@ -1683,6 +1685,15 @@ function formatCalculatorNumber(value) {
 function appendSidesPadKey(key) {
   const current = calculatorState.sidesRaw || "";
   const compactCurrent = current.replace(/\s+/g, "");
+
+  if (key === "equals") {
+    const evaluated = evaluateSidesExpression(compactCurrent);
+    if (evaluated.isValid) {
+      calculatorState.sidesRaw = formatCalculatorNumber(evaluated.value);
+      renderCalculator();
+    }
+    return;
+  }
 
   if (key === "clear") {
     calculatorState.sidesRaw = "";
@@ -2682,22 +2693,17 @@ elements.entryColourSelect.addEventListener("change", (event) => {
   renderCalculator();
 });
 
-elements.orderColoursList.addEventListener("change", (event) => {
-  const select = event.target.closest("[data-order-colour-index]");
-  if (!select) {
-    return;
-  }
-
-  const index = Number(select.getAttribute("data-order-colour-index"));
-  if (!Number.isInteger(index) || index < 0 || index >= calculatorState.orderColours.length) {
-    return;
-  }
-  calculatorState.orderColours[index] = select.value;
-  sanitizeOrderColours();
-  renderCalculator();
-});
-
 elements.orderColoursList.addEventListener("click", (event) => {
+  const selectButton = event.target.closest("[data-select-order-colour]");
+  if (selectButton) {
+    const colourCode = selectButton.getAttribute("data-select-order-colour");
+    if (colourCode && calculatorState.orderColours.includes(colourCode)) {
+      calculatorState.colour = colourCode;
+      renderCalculator();
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-remove-order-colour]");
   if (!button) {
     return;
