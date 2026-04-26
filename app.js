@@ -189,7 +189,6 @@ const elements = {
   orderColoursList: document.querySelector("#orderColoursList"),
   addOrderColourButton: document.querySelector("#addOrderColourButton"),
   entryColourSelect: document.querySelector("#entryColourSelect"),
-  colourLegendList: document.querySelector("#colourLegendList"),
   colourFamilyPicker: document.querySelector("#colourFamilyPicker"),
   qtyInput: document.querySelector("#qtyInput"),
   lengthInput: document.querySelector("#lengthInput"),
@@ -1618,19 +1617,6 @@ function renderColourOptions() {
     .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
     .join("");
   elements.entryColourSelect.value = calculatorState.colour;
-
-  if (elements.colourLegendList) {
-    elements.colourLegendList.innerHTML = COLOUR_PALETTE
-      .map(
-        (entry) => `
-          <div class="supplier-label-row">
-            <span class="colour-swatch__chip" style="background:${escapeHtml(entry.hex)};"></span>
-            <span>${escapeHtml(entry.name)} (${escapeHtml(entry.code)})</span>
-          </div>
-        `
-      )
-      .join("");
-  }
 
   elements.colourFamilyPicker.innerHTML = COLOUR_PALETTE
     .map(
