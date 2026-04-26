@@ -837,6 +837,12 @@ input {
   display: grid;
   gap: 8px;
   margin-top: 10px;
+  visibility: visible;
+}
+
+#colourLegendList {
+  display: grid !important;
+  visibility: visible !important;
 }
 
 details.field summary {
