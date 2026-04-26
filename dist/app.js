@@ -1604,7 +1604,7 @@ function renderColourOptions() {
         ${escapeHtml(getColourLabel(selectedCode))}
       </button>
       ${
-        index > 0
+        calculatorState.orderColours.length > 1
           ? `<button class="supplier-delete-button" type="button" data-remove-order-colour="${index}" title="Remove ${escapeHtml(getColourLabel(selectedCode))}">x</button>`
           : ""
       }
@@ -2696,7 +2696,10 @@ elements.orderColoursList.addEventListener("click", (event) => {
   }
 
   const index = Number(button.getAttribute("data-remove-order-colour"));
-  if (!Number.isInteger(index) || index <= 0 || index >= calculatorState.orderColours.length) {
+  if (!Number.isInteger(index) || index < 0 || index >= calculatorState.orderColours.length) {
+    return;
+  }
+  if (calculatorState.orderColours.length <= 1) {
     return;
   }
   calculatorState.orderColours = calculatorState.orderColours.filter((_, colourIndex) => colourIndex !== index);
@@ -2722,7 +2725,15 @@ elements.colourFamilyPicker.addEventListener("click", (event) => {
   }
 
   if (calculatorState.orderColours.length >= 3) {
-    elements.copyAllFeedback.textContent = "Maximum 3 order colours. Remove one to add another.";
+    const activeIndex = calculatorState.orderColours.indexOf(calculatorState.colour);
+    const replaceIndex = activeIndex >= 0 ? activeIndex : 0;
+    calculatorState.orderColours = calculatorState.orderColours.map((code, index) =>
+      index === replaceIndex ? colourCode : code
+    );
+    sanitizeOrderColours();
+    calculatorState.colour = colourCode;
+    elements.copyAllFeedback.textContent = `${getColourLabel(colourCode)} replaced current selected colour.`;
+    renderCalculator();
     return;
   }
 
