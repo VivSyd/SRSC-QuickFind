@@ -73,24 +73,6 @@
 
         <div class="calculator-layout">
           <div class="calculator-card">
-            <h3>Order Colours</h3>
-            <div id="orderColoursList" class="field field--stack"></div>
-            <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour</button>
-            <label class="field">
-              <span>Flashing Entry Colour</span>
-              <select id="entryColourSelect"></select>
-            </label>
-            <div class="field field--stack">
-              <span>Colour Legend</span>
-              <div id="colourLegendList" class="colour-legend-list"></div>
-            </div>
-            <div class="field field--stack">
-              <span>Colour Family</span>
-              <div id="colourFamilyPicker" class="colour-swatches"></div>
-            </div>
-          </div>
-
-          <div class="calculator-card">
             <h3>Flashing Setup</h3>
             <div class="field-grid">
               <label class="field">
@@ -104,6 +86,20 @@
                 </select>
               </label>
             </div>
+            <div class="field field--stack">
+              <span>Colour Type</span>
+              <div id="colourFamilyPicker" class="colour-swatches"></div>
+            </div>
+            <div class="field field--stack">
+              <span>Colour Legend</span>
+              <div id="colourLegendList" class="colour-legend-list"></div>
+            </div>
+            <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour to Order</button>
+            <div id="orderColoursList" class="field field--stack"></div>
+            <label class="field">
+              <span>Flashing Entry Colour</span>
+              <select id="entryColourSelect"></select>
+            </label>
           </div>
 
           <div class="calculator-card">
