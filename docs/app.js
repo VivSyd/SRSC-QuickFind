@@ -182,6 +182,7 @@ const elements = {
   addItemBackButton: document.querySelector("#addItemBackButton"),
   aboutBackButton: document.querySelector("#aboutBackButton"),
   sidesInput: document.querySelector("#sidesInput"),
+  equalsGirthField: document.querySelector("#equalsGirthField"),
   sidesPad: document.querySelector("#sidesPad"),
   standardFoldsInput: document.querySelector("#standardFoldsInput"),
   crushReturnInput: document.querySelector("#crushReturnInput"),
@@ -243,6 +244,7 @@ function setActiveView(view) {
 
 const calculatorState = {
   sidesRaw: "",
+  equalsGirth: "",
   standardFolds: 0,
   crushReturn: 0,
   isTapering: false,
@@ -1637,6 +1639,7 @@ function renderColourOptions() {
 
 function renderSides() {
   elements.sidesInput.value = calculatorState.sidesRaw;
+  elements.equalsGirthField.value = calculatorState.equalsGirth;
 }
 
 function evaluateSidesExpression(rawValue) {
@@ -1676,6 +1679,8 @@ function appendSidesPadKey(key) {
     const evaluated = evaluateSidesExpression(compactCurrent);
     if (evaluated.isValid) {
       calculatorState.sidesRaw = formatCalculatorNumber(evaluated.value);
+      const { actualGirth } = getCalculatorValues();
+      calculatorState.equalsGirth = formatCalculatorNumber(actualGirth);
       renderCalculator();
     }
     return;
@@ -1683,12 +1688,14 @@ function appendSidesPadKey(key) {
 
   if (key === "clear") {
     calculatorState.sidesRaw = "";
+    calculatorState.equalsGirth = "";
     renderCalculator();
     return;
   }
 
   if (key === "backspace") {
     calculatorState.sidesRaw = current.slice(0, -1);
+    calculatorState.equalsGirth = "";
     renderCalculator();
     return;
   }
@@ -1706,6 +1713,7 @@ function appendSidesPadKey(key) {
   }
 
   calculatorState.sidesRaw = `${compactCurrent}${key}`;
+  calculatorState.equalsGirth = "";
   renderCalculator();
 }
 
@@ -2030,6 +2038,7 @@ function renderCustomItems() {
 
 function resetFlashingForm(resetOrderColours = false) {
   calculatorState.sidesRaw = "";
+  calculatorState.equalsGirth = "";
   calculatorState.standardFolds = 0;
   calculatorState.crushReturn = 0;
   calculatorState.isTapering = false;
@@ -2052,6 +2061,7 @@ function loadFlashingIntoForm(orderItem, index) {
   }
 
   calculatorState.sidesRaw = orderItem.calculatorInput.sidesRaw || "";
+  calculatorState.equalsGirth = "";
   calculatorState.standardFolds = Number(orderItem.calculatorInput.standardFolds || 0);
   const legacyCrushReturns = Array.isArray(orderItem.calculatorInput.crushReturns)
     ? orderItem.calculatorInput.crushReturns
@@ -2648,6 +2658,7 @@ elements.resultsList.addEventListener("click", (event) => {
 
 elements.sidesInput.addEventListener("input", (event) => {
   calculatorState.sidesRaw = event.target.value;
+  calculatorState.equalsGirth = "";
   renderCalculator();
 });
 
