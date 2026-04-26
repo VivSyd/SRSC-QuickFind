@@ -713,6 +713,21 @@ input {
   gap: 8px;
 }
 
+.calculator-pad__operator-row,
+.calculator-pad__action-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.calculator-pad__number-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .calculator-pad__btn {
   min-height: 46px;
   border: 1px solid var(--line-strong);
@@ -725,6 +740,11 @@ input {
 }
 
 .calculator-pad__btn--op {
+  background: linear-gradient(180deg, #2d2d2d, #111);
+  color: #fff7e6;
+}
+
+.calculator-pad__btn--op-line {
   background: linear-gradient(180deg, #2d2d2d, #111);
   color: #fff7e6;
 }
@@ -1199,6 +1219,10 @@ body {
 }
 
 .calculator-pad__btn--op {
+  background: linear-gradient(180deg, #1f2937, #111827);
+}
+
+.calculator-pad__btn--op-line {
   background: linear-gradient(180deg, #1f2937, #111827);
 }
 

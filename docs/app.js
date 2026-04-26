@@ -229,21 +229,27 @@ const elements = {
 
 function renderSumOnlySidesPad() {
   elements.sidesPad.innerHTML = `
-    <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="clear">C</button>
-    <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="backspace">&#9003;</button>
-    <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="+">+</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="7">7</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="8">8</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="9">9</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="4">4</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="5">5</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="6">6</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="1">1</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="2">2</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key="3">3</button>
-    <button type="button" class="calculator-pad__btn calculator-pad__btn--zero" data-pad-key="0">0</button>
-    <button type="button" class="calculator-pad__btn" data-pad-key=".">.</button>
-    <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="equals">=</button>
+    <div class="calculator-pad__operator-row">
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="+">+</button>
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--op-line" data-pad-key="equals">=</button>
+    </div>
+    <div class="calculator-pad__action-row">
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="clear">C</button>
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="backspace">&#9003;</button>
+    </div>
+    <div class="calculator-pad__number-grid">
+      <button type="button" class="calculator-pad__btn" data-pad-key="7">7</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="8">8</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="9">9</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="4">4</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="5">5</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="6">6</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="1">1</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="2">2</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key="3">3</button>
+      <button type="button" class="calculator-pad__btn calculator-pad__btn--zero" data-pad-key="0">0</button>
+      <button type="button" class="calculator-pad__btn" data-pad-key=".">.</button>
+    </div>
   `;
 }
 
@@ -2701,6 +2707,13 @@ elements.sidesInput.addEventListener("input", (event) => {
   calculatorState.sidesRaw = sanitizeSidesRawInput(event.target.value);
   calculatorState.equalsGirth = "";
   renderCalculator();
+});
+
+elements.sidesInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    appendSidesPadKey("equals");
+  }
 });
 
 elements.sidesPad.addEventListener("click", (event) => {
