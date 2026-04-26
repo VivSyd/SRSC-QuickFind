@@ -90,10 +90,13 @@
                 <select id="entryColourSelect"></select>
               </label>
             </div>
-            <div class="field field--stack">
-              <span>Colour Type</span>
-              <div id="colourFamilyPicker" class="colour-swatches"></div>
-            </div>
+            <details id="colourLegendDetails" class="field field--stack">
+              <summary>Colour Legend</summary>
+              <label class="field">
+                <span>Colour Value</span>
+                <select id="colourValueSelect"></select>
+              </label>
+            </details>
             <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour to Order</button>
             <div id="orderColoursList" class="order-colour-chips" aria-label="Selected order colours"></div>
           </div>
@@ -110,8 +113,6 @@
             </label>
             <div id="sidesPad" class="calculator-pad" role="group" aria-label="Sides calculator pad">
               <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="clear">C</button>
-              <button type="button" class="calculator-pad__btn" data-pad-key="(">(</button>
-              <button type="button" class="calculator-pad__btn" data-pad-key=")">)</button>
               <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="backspace">⌫</button>
               <button type="button" class="calculator-pad__btn" data-pad-key="7">7</button>
               <button type="button" class="calculator-pad__btn" data-pad-key="8">8</button>

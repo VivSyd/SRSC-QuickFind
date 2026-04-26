@@ -190,7 +190,8 @@ const elements = {
   orderColoursList: document.querySelector("#orderColoursList"),
   addOrderColourButton: document.querySelector("#addOrderColourButton"),
   entryColourSelect: document.querySelector("#entryColourSelect"),
-  colourFamilyPicker: document.querySelector("#colourFamilyPicker"),
+  colourLegendDetails: document.querySelector("#colourLegendDetails"),
+  colourValueSelect: document.querySelector("#colourValueSelect"),
   qtyInput: document.querySelector("#qtyInput"),
   lengthInput: document.querySelector("#lengthInput"),
   taperingCheckbox: document.querySelector("#taperingCheckbox"),
@@ -226,6 +227,26 @@ const elements = {
   customItemsList: document.querySelector("#customItemsList"),
 };
 
+function renderSumOnlySidesPad() {
+  elements.sidesPad.innerHTML = `
+    <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="clear">C</button>
+    <button type="button" class="calculator-pad__btn calculator-pad__btn--action" data-pad-key="backspace">&#9003;</button>
+    <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="+">+</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="7">7</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="8">8</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="9">9</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="4">4</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="5">5</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="6">6</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="1">1</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="2">2</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key="3">3</button>
+    <button type="button" class="calculator-pad__btn calculator-pad__btn--zero" data-pad-key="0">0</button>
+    <button type="button" class="calculator-pad__btn" data-pad-key=".">.</button>
+    <button type="button" class="calculator-pad__btn calculator-pad__btn--op" data-pad-key="equals">=</button>
+  `;
+}
+
 function setFinderSearchVisible(isVisible) {
   if (!elements.finderSearchBlock) {
     return;
@@ -251,6 +272,7 @@ const calculatorState = {
   family: "colorbond055",
   colour: "MON",
   orderColours: ["MON"],
+  pendingOrderColour: "MON",
   qty: 1,
   qtyRaw: "1",
   length: 1,
@@ -1590,6 +1612,9 @@ function sanitizeOrderColours() {
   if (!calculatorState.orderColours.includes(calculatorState.colour)) {
     calculatorState.colour = calculatorState.orderColours[0];
   }
+  if (!colourOptions.includes(calculatorState.pendingOrderColour)) {
+    calculatorState.pendingOrderColour = calculatorState.orderColours[0];
+  }
 }
 
 function renderColourOptions() {
@@ -1620,21 +1645,10 @@ function renderColourOptions() {
     .join("");
   elements.entryColourSelect.value = calculatorState.colour;
 
-  elements.colourFamilyPicker.innerHTML = COLOUR_PALETTE
-    .map(
-      (swatch) => `
-        <button
-          class="colour-swatch${calculatorState.orderColours.includes(swatch.code) ? " is-active" : ""}${calculatorState.colour === swatch.code ? " is-current" : ""}"
-          type="button"
-          data-family-colour="${escapeHtml(swatch.code)}"
-          title="${escapeHtml(swatch.name)}"
-        >
-          <span class="colour-swatch__chip" style="background:${escapeHtml(swatch.hex)};"></span>
-          <span class="colour-swatch__label">${escapeHtml(swatch.name)}</span>
-        </button>
-      `
-    )
+  elements.colourValueSelect.innerHTML = COLOUR_PALETTE
+    .map((entry) => `<option value="${entry.code}">${entry.name} (${entry.code})</option>`)
     .join("");
+  elements.colourValueSelect.value = calculatorState.pendingOrderColour || calculatorState.colour;
 }
 
 function renderSides() {
@@ -1648,20 +1662,44 @@ function evaluateSidesExpression(rawValue) {
     return { value: 0, display: "0", isValid: true };
   }
 
-  const expression = raw.replace(/×/g, "*").replace(/÷/g, "/");
-  if (!/^[0-9+\-*/().\s]+$/.test(expression) || !/[0-9]/.test(expression)) {
+  const expression = raw.replace(/\s+/g, "");
+  if (!/^[0-9+.]+$/.test(expression) || !/[0-9]/.test(expression)) {
+    return { value: 0, display: raw, isValid: false };
+  }
+  if (/^\+|\+$|\+\+/.test(expression)) {
     return { value: 0, display: raw, isValid: false };
   }
 
-  try {
-    const result = Function(`"use strict"; return (${expression});`)();
-    if (!Number.isFinite(result)) {
+  const segments = expression.split("+");
+  let result = 0;
+  for (const segment of segments) {
+    if (!segment) {
       return { value: 0, display: raw, isValid: false };
     }
-    return { value: result, display: raw, isValid: true };
-  } catch (error) {
-    return { value: 0, display: raw, isValid: false };
+    const parsed = Number(segment);
+    if (!Number.isFinite(parsed)) {
+      return { value: 0, display: raw, isValid: false };
+    }
+    result += parsed;
   }
+  return { value: result, display: raw, isValid: true };
+}
+
+function sanitizeSidesRawInput(rawValue) {
+  const compact = String(rawValue || "").replace(/\s+/g, "");
+  const allowed = compact.replace(/[^0-9+.]/g, "");
+  const parts = allowed.split("+").map((part) => {
+    const firstDot = part.indexOf(".");
+    if (firstDot === -1) {
+      return part;
+    }
+    return `${part.slice(0, firstDot + 1)}${part.slice(firstDot + 1).replace(/\./g, "")}`;
+  });
+  let normalized = parts.join("+").replace(/\++/g, "+");
+  if (allowed.endsWith("+") && !normalized.endsWith("+")) {
+    normalized += "+";
+  }
+  return normalized;
 }
 
 function formatCalculatorNumber(value) {
@@ -1676,10 +1714,11 @@ function appendSidesPadKey(key) {
   const compactCurrent = current.replace(/\s+/g, "");
 
   if (key === "equals") {
+    const originalExpression = current;
     const evaluated = evaluateSidesExpression(compactCurrent);
     if (evaluated.isValid) {
-      const { actualGirth } = getCalculatorValues();
-      calculatorState.equalsGirth = formatCalculatorNumber(actualGirth);
+      calculatorState.sidesRaw = originalExpression;
+      calculatorState.equalsGirth = formatCalculatorNumber(evaluated.value);
       renderCalculator();
     }
     return;
@@ -1699,13 +1738,14 @@ function appendSidesPadKey(key) {
     return;
   }
 
-  const isOperator = ["+", "-", "*", "/"].includes(key);
+  const isOperator = ["+"].includes(key);
   if (isOperator) {
-    if (!compactCurrent && key !== "-") {
+    if (!compactCurrent) {
       return;
     }
-    if (/[+\-*/.]$/.test(compactCurrent)) {
+    if (/[+.]$/.test(compactCurrent)) {
       calculatorState.sidesRaw = `${compactCurrent.slice(0, -1)}${key}`;
+      calculatorState.equalsGirth = "";
       renderCalculator();
       return;
     }
@@ -2047,6 +2087,7 @@ function resetFlashingForm(resetOrderColours = false) {
   }
   sanitizeOrderColours();
   calculatorState.colour = calculatorState.orderColours[0];
+  calculatorState.pendingOrderColour = calculatorState.orderColours[0];
   calculatorState.qty = 1;
   calculatorState.qtyRaw = "1";
   calculatorState.length = 1;
@@ -2075,6 +2116,7 @@ function loadFlashingIntoForm(orderItem, index) {
   }
   sanitizeOrderColours();
   calculatorState.colour = calculatorState.orderColours.includes(itemColour) ? itemColour : calculatorState.orderColours[0];
+  calculatorState.pendingOrderColour = calculatorState.colour;
   calculatorState.qty = Number(orderItem.calculatorInput.qty || 1);
   calculatorState.qtyRaw = String(orderItem.calculatorInput.qty || 1);
   calculatorState.length = Number(orderItem.calculatorInput.length || 1);
@@ -2656,7 +2698,7 @@ elements.resultsList.addEventListener("click", (event) => {
 });
 
 elements.sidesInput.addEventListener("input", (event) => {
-  calculatorState.sidesRaw = event.target.value;
+  calculatorState.sidesRaw = sanitizeSidesRawInput(event.target.value);
   calculatorState.equalsGirth = "";
   renderCalculator();
 });
@@ -2717,17 +2759,12 @@ elements.orderColoursList.addEventListener("click", (event) => {
   renderCalculator();
 });
 
-elements.colourFamilyPicker.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-family-colour]");
-  if (!button) {
-    return;
-  }
+elements.colourValueSelect.addEventListener("change", (event) => {
+  calculatorState.pendingOrderColour = event.target.value || calculatorState.orderColours[0] || "MON";
+});
 
-  const colourCode = button.getAttribute("data-family-colour");
-  if (!colourCode) {
-    return;
-  }
-
+elements.addOrderColourButton.addEventListener("click", () => {
+  const colourCode = calculatorState.pendingOrderColour || calculatorState.orderColours[0] || "MON";
   if (calculatorState.orderColours.includes(colourCode)) {
     calculatorState.colour = colourCode;
     renderCalculator();
@@ -2743,26 +2780,15 @@ elements.colourFamilyPicker.addEventListener("click", (event) => {
     sanitizeOrderColours();
     calculatorState.colour = colourCode;
     elements.copyAllFeedback.textContent = `${getColourLabel(colourCode)} replaced current selected colour.`;
-    renderCalculator();
-    return;
+  } else {
+    calculatorState.orderColours = [...calculatorState.orderColours, colourCode];
+    calculatorState.colour = colourCode;
+    sanitizeOrderColours();
   }
 
-  calculatorState.orderColours = [...calculatorState.orderColours, colourCode];
-  calculatorState.colour = colourCode;
-  sanitizeOrderColours();
-  renderCalculator();
-});
-
-elements.addOrderColourButton.addEventListener("click", () => {
-  if (calculatorState.orderColours.length >= 3) {
-    return;
+  if (elements.colourLegendDetails) {
+    elements.colourLegendDetails.open = false;
   }
-  const firstUnused = COLOUR_PALETTE.find((entry) => !calculatorState.orderColours.includes(entry.code));
-  calculatorState.orderColours = [
-    ...calculatorState.orderColours,
-    (firstUnused && firstUnused.code) || calculatorState.orderColours[0] || "MON",
-  ];
-  sanitizeOrderColours();
   renderCalculator();
 });
 
@@ -2882,6 +2908,7 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+renderSumOnlySidesPad();
 renderColourOptions();
 loadPersistedState();
 renderBranchOptions();

@@ -738,6 +738,14 @@ input {
   grid-column: span 2;
 }
 
+#sidesPad [data-pad-key="/"],
+#sidesPad [data-pad-key="*"],
+#sidesPad [data-pad-key="-"],
+#sidesPad [data-pad-key="("],
+#sidesPad [data-pad-key=")"] {
+  display: none !important;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
