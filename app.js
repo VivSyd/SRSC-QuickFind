@@ -188,10 +188,8 @@ const elements = {
   standardFoldsInput: document.querySelector("#standardFoldsInput"),
   crushReturnInput: document.querySelector("#crushReturnInput"),
   familySelect: document.querySelector("#familySelect"),
-  entryColourField: document.querySelector("#entryColourField"),
   orderColoursList: document.querySelector("#orderColoursList"),
   addOrderColourButton: document.querySelector("#addOrderColourButton"),
-  entryColourSelect: document.querySelector("#entryColourSelect"),
   colourLegendDetails: document.querySelector("#colourLegendDetails"),
   colourValueSelect: document.querySelector("#colourValueSelect"),
   qtyInput: document.querySelector("#qtyInput"),
@@ -1642,30 +1640,13 @@ function renderColourOptions() {
       <button class="supplier-delete-button" type="button" data-remove-order-colour="${index}" title="Remove ${escapeHtml(getColourLabel(selectedCode))}">x</button>
     `)
         .join("")
-      : `<p class="muted-line">No order colours selected.</p>`;
+      : "";
     elements.orderColoursList.hidden = !showColourControls;
   }
 
   if (elements.addOrderColourButton) {
     elements.addOrderColourButton.disabled = !showColourControls || calculatorState.orderColours.length >= 3;
     elements.addOrderColourButton.hidden = !showColourControls;
-  }
-
-  if (elements.entryColourSelect) {
-    if (hasOrderColours) {
-      elements.entryColourSelect.innerHTML = calculatorState.orderColours
-        .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
-        .join("");
-      elements.entryColourSelect.value = calculatorState.colour || calculatorState.orderColours[0];
-    } else {
-      elements.entryColourSelect.innerHTML = `<option value=""></option>`;
-      elements.entryColourSelect.value = "";
-    }
-    elements.entryColourSelect.disabled = !showColourControls || !hasOrderColours;
-  }
-
-  if (elements.entryColourField) {
-    elements.entryColourField.hidden = !showColourControls || !hasOrderColours;
   }
 
   if (elements.colourValueSelect) {
@@ -1878,9 +1859,6 @@ function renderCalculator() {
   elements.standardFoldsInput.value = calculatorState.standardFolds;
   elements.crushReturnInput.value = calculatorState.crushReturn;
   elements.familySelect.value = calculatorState.family;
-  if (elements.entryColourSelect) {
-    elements.entryColourSelect.value = calculatorState.colour || "";
-  }
   elements.qtyInput.value = calculatorState.qtyRaw;
   elements.lengthInput.value = calculatorState.lengthRaw;
   elements.taperingCheckbox.checked = calculatorState.isTapering;
@@ -2791,11 +2769,6 @@ elements.crushReturnInput.addEventListener("input", (event) => {
 
 elements.familySelect.addEventListener("change", (event) => {
   calculatorState.family = event.target.value;
-  renderCalculator();
-});
-
-elements.entryColourSelect?.addEventListener("change", (event) => {
-  calculatorState.colour = event.target.value || "";
   renderCalculator();
 });
 
