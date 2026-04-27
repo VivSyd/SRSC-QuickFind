@@ -188,6 +188,7 @@ const elements = {
   standardFoldsInput: document.querySelector("#standardFoldsInput"),
   crushReturnInput: document.querySelector("#crushReturnInput"),
   familySelect: document.querySelector("#familySelect"),
+  entryColourField: document.querySelector("#entryColourField"),
   orderColoursList: document.querySelector("#orderColoursList"),
   addOrderColourButton: document.querySelector("#addOrderColourButton"),
   entryColourSelect: document.querySelector("#entryColourSelect"),
@@ -277,9 +278,9 @@ const calculatorState = {
   crushReturn: 0,
   isTapering: false,
   family: "colorbond055",
-  colour: "MON",
-  orderColours: ["MON"],
-  pendingOrderColour: "MON",
+  colour: "",
+  orderColours: [],
+  pendingOrderColour: "",
   qty: 1,
   qtyRaw: "1",
   length: 1,
@@ -1611,25 +1612,25 @@ function getColourLabel(code) {
 
 function sanitizeOrderColours() {
   const validUnique = [...new Set((calculatorState.orderColours || []).filter((code) => colourOptions.includes(code)))];
-  const nextColours = validUnique.slice(0, 3);
-  if (nextColours.length === 0) {
-    nextColours.push("MON");
-  }
-  calculatorState.orderColours = nextColours;
+  calculatorState.orderColours = validUnique.slice(0, 3);
   if (!calculatorState.orderColours.includes(calculatorState.colour)) {
-    calculatorState.colour = calculatorState.orderColours[0];
+    calculatorState.colour = calculatorState.orderColours[0] || "";
   }
   if (!colourOptions.includes(calculatorState.pendingOrderColour)) {
-    calculatorState.pendingOrderColour = calculatorState.orderColours[0];
+    calculatorState.pendingOrderColour = "";
   }
 }
 
 function renderColourOptions() {
   sanitizeOrderColours();
+  const family = familyConfig[calculatorState.family];
+  const hasOrderColours = calculatorState.orderColours.length > 0;
+  const showColourControls = family?.usesColour !== false;
 
   if (elements.orderColoursList) {
-    elements.orderColoursList.innerHTML = calculatorState.orderColours
-    .map((selectedCode, index) => `
+    elements.orderColoursList.innerHTML = hasOrderColours
+      ? calculatorState.orderColours
+        .map((selectedCode, index) => `
       <button
         class="source-pill${calculatorState.colour === selectedCode ? " is-active" : ""}"
         type="button"
@@ -1638,31 +1639,49 @@ function renderColourOptions() {
       >
         ${escapeHtml(getColourLabel(selectedCode))}
       </button>
-      ${
-        calculatorState.orderColours.length > 1
-          ? `<button class="supplier-delete-button" type="button" data-remove-order-colour="${index}" title="Remove ${escapeHtml(getColourLabel(selectedCode))}">x</button>`
-          : ""
-      }
+      <button class="supplier-delete-button" type="button" data-remove-order-colour="${index}" title="Remove ${escapeHtml(getColourLabel(selectedCode))}">x</button>
     `)
-    .join("");
+        .join("")
+      : `<p class="muted-line">No order colours selected.</p>`;
+    elements.orderColoursList.hidden = !showColourControls;
   }
 
   if (elements.addOrderColourButton) {
-    elements.addOrderColourButton.disabled = calculatorState.orderColours.length >= 3;
+    elements.addOrderColourButton.disabled = !showColourControls || calculatorState.orderColours.length >= 3;
+    elements.addOrderColourButton.hidden = !showColourControls;
   }
 
   if (elements.entryColourSelect) {
-    elements.entryColourSelect.innerHTML = calculatorState.orderColours
-      .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
-      .join("");
-    elements.entryColourSelect.value = calculatorState.colour;
+    if (hasOrderColours) {
+      elements.entryColourSelect.innerHTML = calculatorState.orderColours
+        .map((code) => `<option value="${code}">${escapeHtml(getColourLabel(code))}</option>`)
+        .join("");
+      elements.entryColourSelect.value = calculatorState.colour || calculatorState.orderColours[0];
+    } else {
+      elements.entryColourSelect.innerHTML = `<option value="">Select order colour</option>`;
+      elements.entryColourSelect.value = "";
+    }
+    elements.entryColourSelect.disabled = !showColourControls || !hasOrderColours;
+  }
+
+  if (elements.entryColourField) {
+    elements.entryColourField.hidden = !showColourControls || !hasOrderColours;
   }
 
   if (elements.colourValueSelect) {
-    elements.colourValueSelect.innerHTML = COLOUR_PALETTE
-      .map((entry) => `<option value="${entry.code}">${entry.name} (${entry.code})</option>`)
-      .join("");
-    elements.colourValueSelect.value = calculatorState.pendingOrderColour || calculatorState.colour;
+    elements.colourValueSelect.innerHTML = `
+      <option value="">Select colour value</option>
+      ${COLOUR_PALETTE
+        .map((entry) => `<option value="${entry.code}">${entry.name} (${entry.code})</option>`)
+        .join("")}
+    `;
+    const preferredPending = colourOptions.includes(calculatorState.pendingOrderColour) ? calculatorState.pendingOrderColour : "";
+    elements.colourValueSelect.value = preferredPending;
+    elements.colourValueSelect.disabled = !showColourControls;
+  }
+
+  if (elements.colourLegendDetails) {
+    elements.colourLegendDetails.hidden = !showColourControls;
   }
 }
 
@@ -1772,6 +1791,10 @@ function appendSidesPadKey(key) {
 }
 
 function getCalculatorValues() {
+  const family = familyConfig[calculatorState.family];
+  const hasSelectedColour = Boolean(calculatorState.colour);
+  const activeColour = family.usesColour ? calculatorState.colour : "";
+  const isMissingRequiredColour = family.usesColour && !hasSelectedColour;
   const sidesEvaluation = evaluateSidesExpression(calculatorState.sidesRaw);
   const totalSidesInput = sidesEvaluation.value;
   const standard = Number(calculatorState.standardFolds || 0);
@@ -1796,21 +1819,24 @@ function getCalculatorValues() {
     crushParts.push(`10 (Crush Fold ${index + 1})`);
   }
   const crushString = crushParts.join(" + ");
-  const family = familyConfig[calculatorState.family];
-  const colourSummary = family.usesColour ? calculatorState.colour : "COPPER";
+  const colourSummary = family.usesColour ? (activeColour || "NO COLOUR") : "COPPER";
   const girthLine = `${sidesString}${crushString ? ` + ${crushString}` : ""} = ${formatCalculatorNumber(actualGirth)} -> ${roundedGirth}${sidesEvaluation.isValid ? "" : " (invalid side expression)"}`;
   const actualGirthLine = `Actual Girth (before rounding): ${formatCalculatorNumber(actualGirth)} mm`;
   const summaryLine = `F:${totalFolds}${totalFolds > 6 ? ` (${mainFolds}+${extraFolds})` : ""} | ${family.label} | [${colourSummary}]${calculatorState.isTapering ? " | TAPER" : ""} | Q:${calculatorState.qty} | L:${calculatorState.length}m`;
-  const workbookMainCode = family.buildCode({
-    girth: roundedGirth,
-    folds: mainFolds,
-    colour: calculatorState.colour,
-  });
-  const mainCode = `${workbookMainCode} ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH`;
+  const workbookMainCode = isMissingRequiredColour
+    ? ""
+    : family.buildCode({
+      girth: roundedGirth,
+      folds: mainFolds,
+      colour: activeColour,
+    });
+  const mainCode = workbookMainCode
+    ? `${workbookMainCode} ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH`
+    : "Select an order colour first.";
   const extraFoldCode = extraFolds > 0 ? `\nF${extraFolds}B ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH` : "";
   const taperCode = calculatorState.isTapering ? `\nFTAP ${calculatorState.qty} QTY AT ${calculatorState.length}M EACH` : "";
-  const finalOutput = mainCode + extraFoldCode + taperCode;
-  const mainMatch = items.find((item) => item.sapCode === workbookMainCode);
+  const finalOutput = workbookMainCode ? (mainCode + extraFoldCode + taperCode) : mainCode;
+  const mainMatch = workbookMainCode ? items.find((item) => item.sapCode === workbookMainCode) : null;
   const extraMatch = extraFolds > 0 ? items.find((item) => item.sapCode === `F${extraFolds}B`) : null;
   const fallbackMatches = items
     .filter((item) =>
@@ -1827,6 +1853,7 @@ function getCalculatorValues() {
     summaryLine,
     finalOutput,
     workbookMainCode,
+    isMissingRequiredColour,
     mainMatch,
     extraMatch,
     fallbackMatches,
@@ -1842,6 +1869,7 @@ function renderCalculator() {
     summaryLine,
     finalOutput,
     workbookMainCode,
+    isMissingRequiredColour,
     mainMatch,
     extraMatch,
     fallbackMatches,
@@ -1850,7 +1878,9 @@ function renderCalculator() {
   elements.standardFoldsInput.value = calculatorState.standardFolds;
   elements.crushReturnInput.value = calculatorState.crushReturn;
   elements.familySelect.value = calculatorState.family;
-  elements.entryColourSelect.value = calculatorState.colour;
+  if (elements.entryColourSelect) {
+    elements.entryColourSelect.value = calculatorState.colour || "";
+  }
   elements.qtyInput.value = calculatorState.qtyRaw;
   elements.lengthInput.value = calculatorState.lengthRaw;
   elements.taperingCheckbox.checked = calculatorState.isTapering;
@@ -1864,7 +1894,15 @@ function renderCalculator() {
   elements.summaryLine.textContent = summaryLine;
   elements.finalOutput.textContent = finalOutput;
 
-  if (mainMatch) {
+  if (isMissingRequiredColour) {
+    elements.matchResults.innerHTML = `
+      <div class="match-card">
+        <span class="match-card__label">Colour Required</span>
+        <div class="match-card__code">Select an order colour</div>
+        <p>Add at least one order colour, then choose the entry colour for this flashing.</p>
+      </div>
+    `;
+  } else if (mainMatch) {
     elements.matchResults.innerHTML = `
       <div class="match-card">
         <span class="match-card__label">Workbook Main Match</span>
@@ -2098,11 +2136,11 @@ function resetFlashingForm(resetOrderColours = false) {
   calculatorState.isTapering = false;
   calculatorState.family = "colorbond055";
   if (resetOrderColours) {
-    calculatorState.orderColours = ["MON"];
+    calculatorState.orderColours = [];
   }
   sanitizeOrderColours();
-  calculatorState.colour = calculatorState.orderColours[0];
-  calculatorState.pendingOrderColour = calculatorState.orderColours[0];
+  calculatorState.colour = "";
+  calculatorState.pendingOrderColour = "";
   calculatorState.qty = 1;
   calculatorState.qtyRaw = "1";
   calculatorState.length = 1;
@@ -2125,13 +2163,13 @@ function loadFlashingIntoForm(orderItem, index) {
   calculatorState.crushReturn = Number(orderItem.calculatorInput.crushReturn || legacyCrushCount || 0);
   calculatorState.isTapering = Boolean(orderItem.calculatorInput.isTapering);
   calculatorState.family = orderItem.calculatorInput.family || "colorbond055";
-  const itemColour = orderItem.calculatorInput.colour || "MON";
-  if (!calculatorState.orderColours.includes(itemColour) && calculatorState.orderColours.length < 3) {
+  const itemColour = String(orderItem.calculatorInput.colour || "");
+  if (itemColour && !calculatorState.orderColours.includes(itemColour) && calculatorState.orderColours.length < 3) {
     calculatorState.orderColours = [...calculatorState.orderColours, itemColour];
   }
   sanitizeOrderColours();
-  calculatorState.colour = calculatorState.orderColours.includes(itemColour) ? itemColour : calculatorState.orderColours[0];
-  calculatorState.pendingOrderColour = calculatorState.colour;
+  calculatorState.colour = calculatorState.orderColours.includes(itemColour) ? itemColour : (calculatorState.orderColours[0] || "");
+  calculatorState.pendingOrderColour = "";
   calculatorState.qty = Number(orderItem.calculatorInput.qty || 1);
   calculatorState.qtyRaw = String(orderItem.calculatorInput.qty || 1);
   calculatorState.length = Number(orderItem.calculatorInput.length || 1);
@@ -2241,6 +2279,12 @@ function deleteItem(itemId) {
 }
 
 function addToOrder() {
+  const selectedFamily = familyConfig[calculatorState.family];
+  if (selectedFamily.usesColour && !calculatorState.colour) {
+    elements.copyAllFeedback.textContent = "Select an order colour first.";
+    return;
+  }
+
   const { girthLine, actualGirthLine, actualGirth, summaryLine, finalOutput } = getCalculatorValues();
   const item = {
     type: "Flashing",
@@ -2751,7 +2795,7 @@ elements.familySelect.addEventListener("change", (event) => {
 });
 
 elements.entryColourSelect?.addEventListener("change", (event) => {
-  calculatorState.colour = event.target.value || calculatorState.orderColours[0] || "MON";
+  calculatorState.colour = event.target.value || "";
   renderCalculator();
 });
 
@@ -2775,20 +2819,21 @@ elements.orderColoursList?.addEventListener("click", (event) => {
   if (!Number.isInteger(index) || index < 0 || index >= calculatorState.orderColours.length) {
     return;
   }
-  if (calculatorState.orderColours.length <= 1) {
-    return;
-  }
   calculatorState.orderColours = calculatorState.orderColours.filter((_, colourIndex) => colourIndex !== index);
   sanitizeOrderColours();
   renderCalculator();
 });
 
 elements.colourValueSelect?.addEventListener("change", (event) => {
-  calculatorState.pendingOrderColour = event.target.value || calculatorState.orderColours[0] || "MON";
+  calculatorState.pendingOrderColour = event.target.value || "";
 });
 
 elements.addOrderColourButton?.addEventListener("click", () => {
-  const colourCode = calculatorState.pendingOrderColour || calculatorState.orderColours[0] || "MON";
+  const colourCode = calculatorState.pendingOrderColour || "";
+  if (!colourCode) {
+    elements.copyAllFeedback.textContent = "Select a colour value to add.";
+    return;
+  }
   if (calculatorState.orderColours.includes(colourCode)) {
     calculatorState.colour = colourCode;
     renderCalculator();
@@ -2796,19 +2841,13 @@ elements.addOrderColourButton?.addEventListener("click", () => {
   }
 
   if (calculatorState.orderColours.length >= 3) {
-    const activeIndex = calculatorState.orderColours.indexOf(calculatorState.colour);
-    const replaceIndex = activeIndex >= 0 ? activeIndex : 0;
-    calculatorState.orderColours = calculatorState.orderColours.map((code, index) =>
-      index === replaceIndex ? colourCode : code
-    );
-    sanitizeOrderColours();
-    calculatorState.colour = colourCode;
-    elements.copyAllFeedback.textContent = `${getColourLabel(colourCode)} replaced current selected colour.`;
-  } else {
-    calculatorState.orderColours = [...calculatorState.orderColours, colourCode];
-    calculatorState.colour = colourCode;
-    sanitizeOrderColours();
+    elements.copyAllFeedback.textContent = "Maximum 3 order colours.";
+    return;
   }
+  calculatorState.orderColours = [...calculatorState.orderColours, colourCode];
+  calculatorState.colour = colourCode;
+  calculatorState.pendingOrderColour = "";
+  sanitizeOrderColours();
 
   if (elements.colourLegendDetails) {
     elements.colourLegendDetails.open = false;
