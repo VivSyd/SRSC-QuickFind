@@ -1658,7 +1658,7 @@ function renderColourOptions() {
         .join("");
       elements.entryColourSelect.value = calculatorState.colour || calculatorState.orderColours[0];
     } else {
-      elements.entryColourSelect.innerHTML = `<option value="">Select order colour</option>`;
+      elements.entryColourSelect.innerHTML = `<option value=""></option>`;
       elements.entryColourSelect.value = "";
     }
     elements.entryColourSelect.disabled = !showColourControls || !hasOrderColours;
