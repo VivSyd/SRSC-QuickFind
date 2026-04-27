@@ -85,19 +85,16 @@
                   <option value="copper055">Copper 0.55</option>
                 </select>
               </label>
-              <label id="entryColourField" class="field">
-                <span>Entry Colour</span>
-                <select id="entryColourSelect"></select>
-              </label>
             </div>
             <details id="colourLegendDetails" class="field field--stack">
-              <summary>Choose Colour</summary>
-              <label class="field">
-                <span>Colour Value</span>
-                <select id="colourValueSelect"></select>
-              </label>
+              <summary>Choose Colour Value</summary>
+              <select id="colourValueSelect" aria-label="Choose Colour Value"></select>
             </details>
             <button id="addOrderColourButton" class="ghost-button" type="button">+ Add Colour to Order</button>
+            <label id="entryColourField" class="field">
+              <span>Entry Colour</span>
+              <select id="entryColourSelect"></select>
+            </label>
             <div id="orderColoursList" class="order-colour-chips" aria-label="Selected order colours"></div>
           </div>
 
